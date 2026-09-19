@@ -10,6 +10,7 @@ import Foundation
 import HealthKit
 import LoopKit
 import SwiftCharts
+import UIKit
 
 struct TargetChartBar {
     let points: [ChartPoint]
@@ -124,6 +125,111 @@ extension ChartPoint: TimelineValue {
             return Date.distantPast
         }
     }
+}
+
+
+extension Collection where Element == ChartPoint {
+    /// Returns a point at `date` using the chart values surrounding that date.
+    ///
+    /// The returned point is placed at the exact requested time so it aligns with
+    /// the shared current-time guide. Continuous charts interpolate between values;
+    /// step charts can retain the latest value by disabling interpolation.
+    func pointAtCurrentTime(_ date: Date, interpolating: Bool = true) -> ChartPoint? {
+        guard
+            let priorValue = reversed().first(where: { $0.startDate <= date }),
+            let nextValue = first(where: { $0.startDate >= date })
+        else {
+            return nil
+        }
+
+        let yValue: ChartAxisValue
+        let interval = nextValue.startDate.timeIntervalSince(priorValue.startDate)
+        if interpolating, interval > 0 {
+            let progress = date.timeIntervalSince(priorValue.startDate) / interval
+            let scalar = priorValue.y.scalar + progress * (nextValue.y.scalar - priorValue.y.scalar)
+            yValue = ChartAxisValue(scalar: scalar)
+        } else {
+            yValue = priorValue.y
+        }
+
+        return ChartPoint(
+            x: ChartAxisValueDate(date: date, formatter: DateFormatter(timeStyle: .short)),
+            y: yValue
+        )
+    }
+}
+
+
+func currentTimeGuideLayer(
+    xAxis: ChartAxis,
+    yAxis: ChartAxis,
+    xAxisValues: [ChartAxisValue],
+    yAxisValues: [ChartAxisValue],
+    color: UIColor,
+    date: Date
+) -> ChartLayer? {
+    guard
+        let firstXValue = xAxisValues.first,
+        let lastXValue = xAxisValues.last,
+        let firstYValue = yAxisValues.first,
+        let lastYValue = yAxisValues.last
+    else {
+        return nil
+    }
+
+    let xValue = ChartAxisValueDate(date: date, formatter: DateFormatter(timeStyle: .short))
+    guard firstXValue.scalar <= xValue.scalar, xValue.scalar <= lastXValue.scalar else {
+        return nil
+    }
+
+    let lineModel = ChartLineModel.predictionLine(
+        points: [
+            ChartPoint(x: xValue, y: firstYValue),
+            ChartPoint(x: xValue, y: lastYValue)
+        ],
+        color: color,
+        width: 1
+    )
+    return ChartPointsLineLayer(
+        xAxis: xAxis,
+        yAxis: yAxis,
+        lineModels: [lineModel]
+    )
+}
+
+
+func currentValueLayers(
+    xAxis: ChartAxis,
+    yAxis: ChartAxis,
+    chartPoints: [ChartPoint],
+    color: UIColor,
+    date: Date,
+    interpolating: Bool = true
+) -> [ChartLayer] {
+    guard let currentPoint = chartPoints.pointAtCurrentTime(date, interpolating: interpolating) else {
+        return []
+    }
+
+    let glow = ChartPointsScatterCirclesLayer(
+        xAxis: xAxis,
+        yAxis: yAxis,
+        chartPoints: [currentPoint],
+        displayDelay: 0,
+        itemSize: CGSize(width: 16, height: 16),
+        itemFillColor: color.withAlphaComponent(0.25),
+        optimized: false
+    )
+    let dot = ChartPointsScatterCirclesLayer(
+        xAxis: xAxis,
+        yAxis: yAxis,
+        chartPoints: [currentPoint],
+        displayDelay: 0,
+        itemSize: CGSize(width: 9, height: 9),
+        itemFillColor: color,
+        optimized: false
+    )
+
+    return [glow, dot]
 }
 
 

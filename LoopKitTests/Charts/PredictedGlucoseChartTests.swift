@@ -15,6 +15,73 @@ import SwiftCharts
 class PredictedGlucoseChartTests: XCTestCase {
 
     private let yAxisStepSizeMGDL: Double = 40
+
+    func testPointAtCurrentTimeUsesLatestPriorValueAtExactCurrentDate() {
+        let currentDate = Date(timeIntervalSinceReferenceDate: 1_000)
+        let formatter = DateFormatter()
+        let points = [
+            ChartPoint(
+                x: ChartAxisValueDate(date: currentDate.addingTimeInterval(-300), formatter: formatter),
+                y: ChartAxisValueDouble(1)
+            ),
+            ChartPoint(
+                x: ChartAxisValueDate(date: currentDate.addingTimeInterval(-60), formatter: formatter),
+                y: ChartAxisValueDouble(2)
+            ),
+            ChartPoint(
+                x: ChartAxisValueDate(date: currentDate.addingTimeInterval(60), formatter: formatter),
+                y: ChartAxisValueDouble(3)
+            )
+        ]
+
+        let currentPoint = points.pointAtCurrentTime(currentDate)
+
+        XCTAssertEqual((currentPoint?.x as? ChartAxisValueDate)?.date, currentDate)
+        XCTAssertEqual(currentPoint?.y.scalar, 2.5)
+    }
+
+    func testPointAtCurrentTimeCanUseStepValue() {
+        let currentDate = Date(timeIntervalSinceReferenceDate: 1_000)
+        let formatter = DateFormatter()
+        let points = [
+            ChartPoint(
+                x: ChartAxisValueDate(date: currentDate.addingTimeInterval(-60), formatter: formatter),
+                y: ChartAxisValueDouble(2)
+            ),
+            ChartPoint(
+                x: ChartAxisValueDate(date: currentDate.addingTimeInterval(60), formatter: formatter),
+                y: ChartAxisValueDouble(3)
+            )
+        ]
+
+        let currentPoint = points.pointAtCurrentTime(currentDate, interpolating: false)
+
+        XCTAssertEqual(currentPoint?.y.scalar, 2)
+    }
+
+    func testPointAtCurrentTimeReturnsNilWithoutPriorValue() {
+        let currentDate = Date(timeIntervalSinceReferenceDate: 1_000)
+        let points = [
+            ChartPoint(
+                x: ChartAxisValueDate(date: currentDate.addingTimeInterval(60), formatter: DateFormatter()),
+                y: ChartAxisValueDouble(1)
+            )
+        ]
+
+        XCTAssertNil(points.pointAtCurrentTime(currentDate))
+    }
+
+    func testPointAtCurrentTimeReturnsNilWhenTimelineDoesNotReachCurrentDate() {
+        let currentDate = Date(timeIntervalSinceReferenceDate: 1_000)
+        let points = [
+            ChartPoint(
+                x: ChartAxisValueDate(date: currentDate.addingTimeInterval(-60), formatter: DateFormatter()),
+                y: ChartAxisValueDouble(1)
+            )
+        ]
+
+        XCTAssertNil(points.pointAtCurrentTime(currentDate))
+    }
     
     func testClampingPredictedGlucoseValues40To400() {
         let glucoseValues = [

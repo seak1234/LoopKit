@@ -79,6 +79,23 @@ public extension IOBChart {
         // Grid lines
         let gridLayer = ChartGuideLinesForValuesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, settings: guideLinesLayerSettings, axisValuesX: Array(xAxisValues.dropFirst().dropLast()), axisValuesY: yAxisValues)
 
+        let currentDate = Date()
+        let currentTimeLayer = currentTimeGuideLayer(
+            xAxis: xAxisLayer.axis,
+            yAxis: yAxisLayer.axis,
+            xAxisValues: xAxisValues,
+            yAxisValues: yAxisValues,
+            color: colors.axisLabel.withAlphaComponent(0.35),
+            date: currentDate
+        )
+        let currentLayers = currentValueLayers(
+            xAxis: xAxisLayer.axis,
+            yAxis: yAxisLayer.axis,
+            chartPoints: iobPoints,
+            color: colors.insulinTint,
+            date: currentDate
+        )
+
         // 0-line
         let dummyZeroChartPoint = ChartPoint(x: ChartAxisValueDouble(0), y: ChartAxisValueDouble(0))
         let zeroGuidelineLayer = ChartPointsViewsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: [dummyZeroChartPoint], viewGenerator: {(chartPointModel, layer, chart) -> UIView? in
@@ -107,12 +124,15 @@ public extension IOBChart {
 
         let layers: [ChartLayer?] = [
             gridLayer,
+            currentTimeLayer,
             xAxisLayer,
             yAxisLayer,
             zeroGuidelineLayer,
             iobChartCache?.highlightLayer,
             iobArea,
             iobLine,
+            currentLayers.first,
+            currentLayers.last
         ]
 
         return Chart(frame: frame, innerFrame: innerFrame, settings: chartSettings, layers: layers.compactMap { $0 })
