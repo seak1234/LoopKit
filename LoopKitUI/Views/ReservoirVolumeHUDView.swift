@@ -24,6 +24,20 @@ public final class ReservoirVolumeHUDView: LevelHUDView, NibLoadable {
         super.awakeFromNib()
 
         volumeLabel.isHidden = true
+        updateImageViewTintColor()
+    }
+
+    private func updateImageViewTintColor() {
+        func tintImageViews(in view: UIView) {
+            for subview in view.subviews {
+                if let iv = subview as? UIImageView {
+                    iv.image = iv.image?.withRenderingMode(.alwaysTemplate)
+                    iv.tintColor = tintColor
+                }
+                tintImageViews(in: subview)
+            }
+        }
+        tintImageViews(in: self)
     }
 
     override public func levelDidChange() {
@@ -73,5 +87,6 @@ public final class ReservoirVolumeHUDView: LevelHUDView, NibLoadable {
         super.tintColorDidChange()
 
         volumeLabel.textColor = tintColor
+        updateImageViewTintColor()
     }
 }
