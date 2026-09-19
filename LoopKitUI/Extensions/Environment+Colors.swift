@@ -37,7 +37,9 @@ public extension EnvironmentValues {
 }
 
 private struct CarbTintColorKey: EnvironmentKey {
-    static let defaultValue: Color = .green
+    static let defaultValue: Color = Color(UIColor { _ in
+        UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 1.0)
+    })
 }
 
 public extension EnvironmentValues {
@@ -63,7 +65,9 @@ public extension EnvironmentValues {
 }
 
 private struct InsulinTintColorKey: EnvironmentKey {
-    static let defaultValue: Color = .orange
+    static let defaultValue: Color = Color(UIColor { _ in
+        UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 1.0)
+    })
 }
 
 public extension EnvironmentValues {
@@ -114,7 +118,7 @@ private struct ChartColorPaletteKey: EnvironmentKey {
                                                                    axisLabel: .secondaryLabel,
                                                                    grid: .systemGray3,
                                                                    glucoseTint: .systemTeal,
-                                                                   insulinTint: .orange,
+                                                                   insulinTint: UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 1.0),
                                                                    carbTint: .systemGreen)
 }
 

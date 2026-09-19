@@ -73,13 +73,17 @@ public class DismissibleHostingController<Content: View>: UIHostingController<_D
         isModalInPresentation: Bool = true,
         onDisappear: @escaping () -> Void = {},
         guidanceColors: GuidanceColors = GuidanceColors(),
-        carbTintColor: Color = .green,
+        carbTintColor: Color = Color(UIColor { _ in
+            UIColor(red: 16/255, green: 185/255, blue: 129/255, alpha: 1.0)
+        }),
         glucoseTintColor: Color = Color(UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
                 ? UIColor(red: 34/255, green: 211/255, blue: 238/255, alpha: 1.0)
                 : UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
         }),
-        insulinTintColor: Color = .orange
+        insulinTintColor: Color = Color(UIColor { _ in
+            UIColor(red: 245/255, green: 158/255, blue: 11/255, alpha: 1.0)
+        })
     ) {
         let view = _DismissibleHostingView(
             content: content,
