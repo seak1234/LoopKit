@@ -46,7 +46,16 @@ public extension COBChart {
 
     func generate(withFrame frame: CGRect, xAxisModel: ChartAxisModel, xAxisValues: [ChartAxisValue], axisLabelSettings: ChartLabelSettings, guideLinesLayerSettings: ChartGuideLinesLayerSettings, colors: ChartColorPalette, chartSettings: ChartSettings, labelsWidthY: CGFloat, gestureRecognizer: UIGestureRecognizer?, traitCollection: UITraitCollection) -> Chart
     {
-        let yAxisValues = ChartAxisValuesStaticGenerator.generateYAxisValuesWithChartPoints(cobPoints + cobDisplayRangePoints, minSegmentCount: 2, maxSegmentCount: 3, multiple: 10, axisValueGenerator: { ChartAxisValueDouble($0, labelSettings: axisLabelSettings) }, addPaddingSegmentIfEdge: false)
+        let minScalar = xAxisValues.first?.scalar ?? 0
+        let maxScalar = xAxisValues.last?.scalar ?? 0
+        let clippedCOBPoints = cobPoints.clippedToHorizontalRange(
+            min: minScalar,
+            max: maxScalar,
+            unitString: HKUnit.gram().unitString,
+            formatter: NumberFormatter.integer
+        )
+
+        let yAxisValues = ChartAxisValuesStaticGenerator.generateYAxisValuesWithChartPoints(clippedCOBPoints + cobDisplayRangePoints, minSegmentCount: 2, maxSegmentCount: 3, multiple: 10, axisValueGenerator: { ChartAxisValueDouble($0, labelSettings: axisLabelSettings) }, addPaddingSegmentIfEdge: false)
 
         let yAxisModel = ChartAxisModel(axisValues: yAxisValues, lineColor: colors.axisLine, labelSpaceReservationMode: .fixed(labelsWidthY))
 
@@ -55,7 +64,7 @@ public extension COBChart {
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
         // The COB area
-        let lineModel = ChartLineModel(chartPoints: cobPoints, lineColor: colors.carbTint, lineWidth: 2.2, animDuration: 0, animDelay: 0)
+        let lineModel = ChartLineModel(chartPoints: clippedCOBPoints, lineColor: colors.carbTint, lineWidth: 2.2, animDuration: 0, animDelay: 0)
         let cobLine = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
 
         let cobArea = ChartPointsFillsLayer(
@@ -63,7 +72,7 @@ public extension COBChart {
             yAxis: yAxisLayer.axis,
             fills: [
                 ChartPointsFill(
-                    chartPoints: cobPoints,
+                    chartPoints: clippedCOBPoints,
                     fillColor: colors.carbTint.withAlphaComponent(0.35),
                     linearGradient: (
                         topColor: colors.carbTint.withAlphaComponent(0.50),
@@ -88,7 +97,7 @@ public extension COBChart {
         let currentLayers = currentValueLayers(
             xAxis: xAxisLayer.axis,
             yAxis: yAxisLayer.axis,
-            chartPoints: cobPoints,
+            chartPoints: clippedCOBPoints,
             color: colors.carbTint,
             date: currentDate
         )
@@ -113,7 +122,7 @@ public extension COBChart {
                 xAxisLayer: xAxisLayer,
                 yAxisLayer: yAxisLayer,
                 axisLabelSettings: axisLabelSettings,
-                chartPoints: cobPoints,
+                chartPoints: clippedCOBPoints,
                 tintColor: colors.carbTint,
                 gestureRecognizer: gestureRecognizer
             )

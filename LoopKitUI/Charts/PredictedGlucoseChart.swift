@@ -187,11 +187,18 @@ extension PredictedGlucoseChart {
             date: Date()
         )
 
-        let circles = ChartPointsScatterCirclesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: glucosePoints, displayDelay: 0, itemSize: CGSize(width: 4.5, height: 4.5), itemFillColor: colors.glucoseTint, optimized: true)
+        let minScalar = xAxisLayer.axis.first
+        let maxScalar = xAxisLayer.axis.last
+        let unitFormatter = QuantityFormatter(for: glucoseUnit)
+        unitFormatter.unitStyle = .short
+        let unitString = unitFormatter.localizedUnitStringWithPlurality()
+
+        let visibleGlucosePoints = glucosePoints.filter { $0.x.scalar >= minScalar && $0.x.scalar <= maxScalar }
+        let circles = ChartPointsScatterCirclesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: visibleGlucosePoints, displayDelay: 0, itemSize: CGSize(width: 4.5, height: 4.5), itemFillColor: colors.glucoseTint, optimized: true)
 
         var latestGlow: ChartLayer?
         var latestDot: ChartLayer?
-        if let latestPoint = glucosePoints.last {
+        if let latestPoint = visibleGlucosePoints.last {
             latestGlow = ChartPointsScatterCirclesLayer(
                 xAxis: xAxisLayer.axis,
                 yAxis: yAxisLayer.axis,
@@ -214,8 +221,11 @@ extension PredictedGlucoseChart {
 
         var alternatePrediction: ChartLayer?
 
-        if let altPoints = alternatePredictedGlucosePoints, altPoints.count > 1 {
+        let clippedAltPoints: [ChartPoint]? = alternatePredictedGlucosePoints.map {
+            $0.clippedToHorizontalRange(min: minScalar, max: maxScalar, unitString: unitString, formatter: unitFormatter.numberFormatter)
+        }
 
+        if let altPoints = clippedAltPoints, altPoints.count > 1 {
             let lineModel = ChartLineModel.predictionLine(points: altPoints, color: colors.glucoseTint.withAlphaComponent(0.55), width: 1.5)
 
             alternatePrediction = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
@@ -223,11 +233,13 @@ extension PredictedGlucoseChart {
 
         var prediction: ChartLayer?
 
-        if predictedGlucosePoints.count > 1 {
+        let clippedPredictedPoints = predictedGlucosePoints.clippedToHorizontalRange(min: minScalar, max: maxScalar, unitString: unitString, formatter: unitFormatter.numberFormatter)
+
+        if clippedPredictedPoints.count > 1 {
             let lineColor = (alternatePrediction == nil) ? colors.glucoseTint.withAlphaComponent(0.55) : UIColor.secondaryLabel
 
             let lineModel = ChartLineModel.predictionLine(
-                points: predictedGlucosePoints,
+                points: clippedPredictedPoints,
                 color: lineColor,
                 width: 1.5
             )
@@ -236,11 +248,14 @@ extension PredictedGlucoseChart {
         }
 
         if gestureRecognizer != nil {
+            let cachePredictionPoints = (alternatePrediction != nil)
+                ? (clippedAltPoints ?? [])
+                : clippedPredictedPoints
             glucoseChartCache = ChartPointsTouchHighlightLayerViewCache(
                 xAxisLayer: xAxisLayer,
                 yAxisLayer: yAxisLayer,
                 axisLabelSettings: axisLabelSettings,
-                chartPoints: glucosePoints + (alternatePredictedGlucosePoints ?? predictedGlucosePoints),
+                chartPoints: visibleGlucosePoints + cachePredictionPoints,
                 tintColor: colors.glucoseTint,
                 gestureRecognizer: gestureRecognizer
             )

@@ -128,7 +128,7 @@ extension ChartPoint: TimelineValue {
 }
 
 
-extension Collection where Element == ChartPoint {
+public extension Collection where Element == ChartPoint {
     /// Returns a point at `date` using the chart values surrounding that date.
     ///
     /// The returned point is placed at the exact requested time so it aligns with
@@ -156,6 +156,73 @@ extension Collection where Element == ChartPoint {
             x: ChartAxisValueDate(date: date, formatter: DateFormatter(timeStyle: .short)),
             y: yValue
         )
+    }
+
+    /// Clips a collection of ChartPoints ordered chronologically by x.scalar to a horizontal scalar range [minScalar, maxScalar].
+    /// Segments intersecting minScalar or maxScalar are linearly interpolated.
+    func clippedToHorizontalRange(
+        min minScalar: Double,
+        max maxScalar: Double,
+        unitString: String? = nil,
+        formatter: NumberFormatter? = nil
+    ) -> [ChartPoint] {
+        guard !isEmpty, minScalar < maxScalar else { return [] }
+
+        let defaultDateFormatter = DateFormatter(timeStyle: .short)
+        func makeInterpolatedPoint(targetScalar: Double, p1: ChartPoint, p2: ChartPoint) -> ChartPoint {
+            let dx = p2.x.scalar - p1.x.scalar
+            let ratio = dx != 0 ? (targetScalar - p1.x.scalar) / dx : 0
+            let interpolatedY = p1.y.scalar + ratio * (p2.y.scalar - p1.y.scalar)
+
+            let xVal = ChartAxisValueDate(date: Date(timeIntervalSince1970: targetScalar), formatter: defaultDateFormatter)
+
+            let yVal: ChartAxisValue
+            let resolvedUnit = unitString ?? (p1.y as? ChartAxisValueDoubleUnit)?.unitString ?? (p2.y as? ChartAxisValueDoubleUnit)?.unitString
+            let resolvedFormatter = formatter ?? (p1.y as? ChartAxisValueDoubleUnit)?.formatter ?? (p2.y as? ChartAxisValueDoubleUnit)?.formatter
+
+            if let unit = resolvedUnit, let fmt = resolvedFormatter {
+                yVal = ChartAxisValueDoubleUnit(interpolatedY, unitString: unit, formatter: fmt)
+            } else if let fmt = resolvedFormatter {
+                yVal = ChartAxisValueDouble(interpolatedY, formatter: fmt)
+            } else {
+                yVal = ChartAxisValueDouble(interpolatedY)
+            }
+
+            return ChartPoint(x: xVal, y: yVal)
+        }
+
+        var result: [ChartPoint] = []
+        var prev: ChartPoint? = nil
+
+        for point in self {
+            let scalar = point.x.scalar
+
+            if scalar < minScalar {
+                prev = point
+                continue
+            }
+
+            if scalar >= minScalar && scalar <= maxScalar {
+                if let p = prev, p.x.scalar < minScalar, scalar > minScalar {
+                    result.append(makeInterpolatedPoint(targetScalar: minScalar, p1: p, p2: point))
+                }
+                result.append(point)
+                prev = point
+            } else { // scalar > maxScalar
+                if let p = prev {
+                    if p.x.scalar < minScalar {
+                        result.append(makeInterpolatedPoint(targetScalar: minScalar, p1: p, p2: point))
+                        result.append(makeInterpolatedPoint(targetScalar: maxScalar, p1: p, p2: point))
+                    } else if p.x.scalar < maxScalar {
+                        result.append(makeInterpolatedPoint(targetScalar: maxScalar, p1: p, p2: point))
+                    }
+                }
+                prev = point
+                break
+            }
+        }
+
+        return result
     }
 }
 

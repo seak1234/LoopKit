@@ -40,6 +40,14 @@ public final class ChartTableViewCell: UITableViewCell {
         return view
     }()
 
+    public private(set) lazy var historyDurationSelector: HistoryDurationSelectorControl = {
+        let selector = HistoryDurationSelectorControl()
+        selector.isHidden = true
+        return selector
+    }()
+
+    private var historyDurationSelectorConstraints: [NSLayoutConstraint] = []
+
     public override func awakeFromNib() {
         super.awakeFromNib()
         setupCardAppearance()
@@ -69,6 +77,7 @@ public final class ChartTableViewCell: UITableViewCell {
     public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         updateCardColors()
+        historyDurationSelector.updateColors()
         if let color = currentDotColor {
             dotIndicatorView.backgroundColor = color
         }
@@ -114,6 +123,42 @@ public final class ChartTableViewCell: UITableViewCell {
         ])
     }
 
+    private func setupHistoryDurationSelector() {
+        guard let titleLabel = titleLabel, historyDurationSelector.superview == nil else { return }
+
+        contentView.addSubview(historyDurationSelector)
+
+        var constraints = [
+            historyDurationSelector.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 8),
+            historyDurationSelector.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor)
+        ]
+
+        if let subtitleLabel = subtitleLabel {
+            let spacing = subtitleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: historyDurationSelector.trailingAnchor, constant: 6)
+            spacing.priority = .defaultHigh
+            constraints.append(spacing)
+        }
+
+        historyDurationSelectorConstraints = constraints
+        NSLayoutConstraint.activate(historyDurationSelectorConstraints)
+    }
+
+    public func configureHistoryDurationSelector(selectedHours: Int, onSelect: @escaping (Int) -> Void) {
+        setupHistoryDurationSelector()
+        historyDurationSelector.selectedHours = selectedHours
+        historyDurationSelector.onDurationSelected = onSelect
+        historyDurationSelector.isHidden = false
+        NSLayoutConstraint.activate(historyDurationSelectorConstraints)
+        subtitleLabel?.adjustsFontSizeToFitWidth = true
+        subtitleLabel?.minimumScaleFactor = 0.85
+    }
+
+    public func hideHistoryDurationSelector() {
+        historyDurationSelector.isHidden = true
+        historyDurationSelector.onDurationSelected = nil
+        NSLayoutConstraint.deactivate(historyDurationSelectorConstraints)
+    }
+
     public func setDotColor(_ color: UIColor?) {
         self.currentDotColor = color
         if let color = color {
@@ -129,6 +174,7 @@ public final class ChartTableViewCell: UITableViewCell {
         doesNavigate = true
         chartContentView.chartGenerator = nil
         dotIndicatorView.isHidden = true
+        hideHistoryDurationSelector()
         titleLabel?.attributedText = nil
         titleLabel?.text = nil
         subtitleLabel?.attributedText = nil
@@ -209,5 +255,114 @@ public final class ChartTableViewCell: UITableViewCell {
         titleLabel?.alpha = alpha
         subtitleLabel?.alpha = alpha
         dotIndicatorView.alpha = alpha
+        historyDurationSelector.alpha = alpha
+    }
+}
+
+public final class HistoryDurationSelectorControl: UIControl {
+    public static let availableHours: [Int] = [3, 6, 12, 24]
+
+    public var onDurationSelected: ((Int) -> Void)?
+
+    public var selectedHours: Int = 3 {
+        didSet {
+            updateSelectedState()
+        }
+    }
+
+    private var buttons: [Int: UIButton] = [:]
+    private let stackView: UIStackView = {
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.alignment = .fill
+        stack.spacing = 1
+        return stack
+    }()
+
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        translatesAutoresizingMaskIntoConstraints = false
+        layer.cornerRadius = 11
+        layer.masksToBounds = true
+        layer.borderWidth = 0.5
+
+        addSubview(stackView)
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 1.5),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -1.5),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+            widthAnchor.constraint(equalToConstant: 108),
+            heightAnchor.constraint(equalToConstant: 22)
+        ])
+
+        for hours in Self.availableHours {
+            let button = UIButton(type: .custom)
+            button.setTitle("\(hours)h", for: .normal)
+            button.titleLabel?.font = .systemFont(ofSize: 10.5, weight: .semibold)
+            button.layer.cornerRadius = 9.5
+            button.layer.masksToBounds = true
+            button.tag = hours
+            button.addTarget(self, action: #selector(buttonTapped(_:)), for: .touchUpInside)
+            stackView.addArrangedSubview(button)
+            buttons[hours] = button
+        }
+
+        updateColors()
+        updateSelectedState()
+    }
+
+    @objc private func buttonTapped(_ sender: UIButton) {
+        let hours = sender.tag
+        guard hours != selectedHours else { return }
+        UISelectionFeedbackGenerator().selectionChanged()
+        selectedHours = hours
+        onDurationSelected?(hours)
+    }
+
+    public func updateColors() {
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        backgroundColor = isDark
+            ? UIColor(white: 1.0, alpha: 0.08)
+            : UIColor(white: 0.0, alpha: 0.06)
+        layer.borderColor = isDark
+            ? UIColor(white: 1.0, alpha: 0.12).cgColor
+            : UIColor(white: 0.0, alpha: 0.08).cgColor
+
+        updateSelectedState()
+    }
+
+    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        updateColors()
+    }
+
+    private func updateSelectedState() {
+        let isDark = traitCollection.userInterfaceStyle == .dark
+        for (hours, button) in buttons {
+            let isSelected = (hours == selectedHours)
+            if isSelected {
+                button.backgroundColor = isDark
+                    ? UIColor(white: 0.32, alpha: 1.0)
+                    : UIColor.white
+                button.setTitleColor(isDark ? .white : .black, for: .normal)
+                button.titleLabel?.font = .systemFont(ofSize: 10.5, weight: .bold)
+            } else {
+                button.backgroundColor = .clear
+                button.setTitleColor(.secondaryLabel, for: .normal)
+                button.titleLabel?.font = .systemFont(ofSize: 10.5, weight: .medium)
+            }
+        }
     }
 }

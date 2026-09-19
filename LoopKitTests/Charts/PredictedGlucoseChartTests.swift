@@ -82,6 +82,59 @@ class PredictedGlucoseChartTests: XCTestCase {
 
         XCTAssertNil(points.pointAtCurrentTime(currentDate))
     }
+
+    func testClippedToHorizontalRangeClipsRightEdgeWithInterpolation() {
+        let formatter = DateFormatter()
+        let t0: Double = 1000
+        let t1: Double = 2000
+        let t2: Double = 3000
+        let points = [
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: t0), formatter: formatter), y: ChartAxisValueDouble(10)),
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: t1), formatter: formatter), y: ChartAxisValueDouble(20)),
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: t2), formatter: formatter), y: ChartAxisValueDouble(30))
+        ]
+
+        let clipped = points.clippedToHorizontalRange(min: 500, max: 2500)
+        XCTAssertEqual(clipped.count, 3)
+        XCTAssertEqual(clipped[0].x.scalar, t0)
+        XCTAssertEqual(clipped[0].y.scalar, 10)
+        XCTAssertEqual(clipped[1].x.scalar, t1)
+        XCTAssertEqual(clipped[1].y.scalar, 20)
+        XCTAssertEqual(clipped[2].x.scalar, 2500)
+        XCTAssertEqual(clipped[2].y.scalar, 25) // Interpolated halfway between 20 and 30
+    }
+
+    func testClippedToHorizontalRangeClipsLeftEdgeWithInterpolation() {
+        let formatter = DateFormatter()
+        let t0: Double = 1000
+        let t1: Double = 2000
+        let t2: Double = 3000
+        let points = [
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: t0), formatter: formatter), y: ChartAxisValueDouble(10)),
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: t1), formatter: formatter), y: ChartAxisValueDouble(20)),
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: t2), formatter: formatter), y: ChartAxisValueDouble(30))
+        ]
+
+        let clipped = points.clippedToHorizontalRange(min: 1500, max: 3500)
+        XCTAssertEqual(clipped.count, 3)
+        XCTAssertEqual(clipped[0].x.scalar, 1500)
+        XCTAssertEqual(clipped[0].y.scalar, 15) // Interpolated halfway between 10 and 20
+        XCTAssertEqual(clipped[1].x.scalar, t1)
+        XCTAssertEqual(clipped[1].y.scalar, 20)
+        XCTAssertEqual(clipped[2].x.scalar, t2)
+        XCTAssertEqual(clipped[2].y.scalar, 30)
+    }
+
+    func testClippedToHorizontalRangeReturnsEmptyWhenOutside() {
+        let formatter = DateFormatter()
+        let points = [
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: 1000), formatter: formatter), y: ChartAxisValueDouble(10)),
+            ChartPoint(x: ChartAxisValueDate(date: Date(timeIntervalSince1970: 2000), formatter: formatter), y: ChartAxisValueDouble(20))
+        ]
+
+        let clipped = points.clippedToHorizontalRange(min: 3000, max: 4000)
+        XCTAssertTrue(clipped.isEmpty)
+    }
     
     func testClampingPredictedGlucoseValues40To400() {
         let glucoseValues = [

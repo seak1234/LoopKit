@@ -170,36 +170,52 @@ open class ChartsManager {
             updateEndDate(endDate)
         }
 
-        let points = [
-            ChartPoint(
-                x: ChartAxisValueDate(date: startDate, formatter: timeFormatter),
-                y: ChartAxisValue(scalar: 0)
-            ),
-            ChartPoint(
-                x: ChartAxisValueDate(date: endDate, formatter: timeFormatter),
-                y: ChartAxisValue(scalar: 0)
-            )
-        ]
+        let totalHours = ceil(endDate.timeIntervalSince(startDate).hours)
+        guard totalHours > 0 else {
+            self.xAxisValues = []
+            return
+        }
 
-        let segments = ceil(endDate.timeIntervalSince(startDate).hours)
+        let hourStep: Double
+        if totalHours <= 9 {
+            hourStep = 1
+        } else if totalHours <= 14 {
+            hourStep = 2
+        } else if totalHours <= 20 {
+            hourStep = 3
+        } else {
+            hourStep = 6
+        }
 
-        let xAxisValues = ChartAxisValuesStaticGenerator.generateXAxisValuesWithChartPoints(points,
-            minSegmentCount: segments - 1,
-            maxSegmentCount: segments + 1,
-            multiple: TimeInterval(hours: 1),
-            axisValueGenerator: {
-                ChartAxisValueDate(
-                    date: ChartAxisValueDate.dateFromScalar($0),
-                    formatter: timeFormatter,
-                    labelSettings: self.axisLabelSettings
-                )
-            },
-            addPaddingSegmentIfEdge: false
+        let firstAxisValue = ChartAxisValueDate(
+            date: startDate,
+            formatter: timeFormatter,
+            labelSettings: axisLabelSettings
         )
-        xAxisValues.first?.hidden = true
-        xAxisValues.last?.hidden = true
+        firstAxisValue.hidden = true
 
-        self.xAxisValues = xAxisValues
+        let lastAxisValue = ChartAxisValueDate(
+            date: endDate,
+            formatter: timeFormatter,
+            labelSettings: axisLabelSettings
+        )
+        lastAxisValue.hidden = true
+
+        var values: [ChartAxisValue] = [firstAxisValue]
+        var currentDate = startDate.addingTimeInterval(.hours(hourStep))
+        let minSpacingFromEnd = TimeInterval(hours: hourStep * 0.5)
+        while currentDate < endDate.addingTimeInterval(-minSpacingFromEnd) {
+            let axisValue = ChartAxisValueDate(
+                date: currentDate,
+                formatter: timeFormatter,
+                labelSettings: axisLabelSettings
+            )
+            values.append(axisValue)
+            currentDate = currentDate.addingTimeInterval(.hours(hourStep))
+        }
+        values.append(lastAxisValue)
+
+        self.xAxisValues = values
     }
 
     /// Runs any necessary steps before rendering charts

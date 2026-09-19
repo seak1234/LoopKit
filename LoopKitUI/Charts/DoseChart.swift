@@ -11,6 +11,8 @@ import SwiftCharts
 import UIKit
 
 fileprivate struct DosePointsCache {
+    let startDate: Date
+    let endDate: Date
     let basal: [ChartPoint]
     let basalFill: [ChartPoint]
     let bolus: [ChartPoint]
@@ -62,8 +64,9 @@ public extension DoseChart {
         let integerFormatter = NumberFormatter.integer
         
         let startDate = ChartAxisValueDate.dateFromScalar(xAxisValues.first!.scalar)
+        let endDate = ChartAxisValueDate.dateFromScalar(xAxisValues.last!.scalar)
         
-        let points = generateDosePoints(startDate: startDate)
+        let points = generateDosePoints(startDate: startDate, endDate: endDate)
 
         let yAxisValues = ChartAxisValuesStaticGenerator.generateYAxisValuesUsingLinearSegmentStep(
             chartPoints: points.basal + points.bolus + doseDisplayRangePoints,
@@ -178,10 +181,9 @@ public extension DoseChart {
         return chart
     }
     
-    private func generateDosePoints(startDate: Date) -> DosePointsCache {
-        
-        guard pointsCache == nil else {
-            return pointsCache!
+    private func generateDosePoints(startDate: Date, endDate: Date) -> DosePointsCache {
+        if let pointsCache = pointsCache, pointsCache.startDate == startDate, pointsCache.endDate == endDate {
+            return pointsCache
         }
         
         let dateFormatter = DateFormatter(timeStyle: .short)
@@ -196,16 +198,27 @@ public extension DoseChart {
             let time = entry.endDate.timeIntervalSince(entry.startDate)
 
             if entry.type == .bolus && entry.netBasalUnits > 0 {
-                let x = ChartAxisValueDate(date: entry.startDate, formatter: dateFormatter)
-                let y = ChartAxisValueDoubleLog(actualDouble: entry.unitsInDeliverableIncrements, unitString: "U", formatter: doseFormatter)
+                if entry.startDate >= startDate && entry.startDate <= endDate {
+                    let x = ChartAxisValueDate(date: entry.startDate, formatter: dateFormatter)
+                    let y = ChartAxisValueDoubleLog(actualDouble: entry.unitsInDeliverableIncrements, unitString: "U", formatter: doseFormatter)
 
-                let point = ChartPoint(x: x, y: y)
-                bolusPoints.append(point)
-                highlightPoints.append(point)
+                    let point = ChartPoint(x: x, y: y)
+                    bolusPoints.append(point)
+                    highlightPoints.append(point)
+                }
             } else if time > 0 {
-                // TODO: Display the DateInterval
-                let startX = ChartAxisValueDate(date: max(startDate, entry.startDate), formatter: dateFormatter)
-                let endX = ChartAxisValueDate(date: entry.endDate, formatter: dateFormatter)
+                guard entry.endDate > startDate && entry.startDate < endDate else {
+                    continue
+                }
+
+                let clampedStartDate = max(startDate, entry.startDate)
+                let clampedEndDate = min(endDate, entry.endDate)
+                guard clampedEndDate > clampedStartDate else {
+                    continue
+                }
+
+                let startX = ChartAxisValueDate(date: clampedStartDate, formatter: dateFormatter)
+                let endX = ChartAxisValueDate(date: clampedEndDate, formatter: dateFormatter)
                 let zero = ChartAxisValueInt(0)
                 let rate = entry.netBasalUnitsPerHour
                 let value = ChartAxisValueDoubleLog(actualDouble: rate, unitString: "U/hour", formatter: doseFormatter)
@@ -232,7 +245,7 @@ public extension DoseChart {
             }
         }
         
-        let pointsCache = DosePointsCache(basal: basalPoints, basalFill: basalFillPoints, bolus: bolusPoints, highlight: highlightPoints)
+        let pointsCache = DosePointsCache(startDate: startDate, endDate: endDate, basal: basalPoints, basalFill: basalFillPoints, bolus: bolusPoints, highlight: highlightPoints)
         self.pointsCache = pointsCache
         return pointsCache
     }

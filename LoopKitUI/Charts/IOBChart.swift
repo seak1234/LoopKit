@@ -49,7 +49,16 @@ public extension IOBChart {
 
     func generate(withFrame frame: CGRect, xAxisModel: ChartAxisModel, xAxisValues: [ChartAxisValue], axisLabelSettings: ChartLabelSettings, guideLinesLayerSettings: ChartGuideLinesLayerSettings, colors: ChartColorPalette, chartSettings: ChartSettings, labelsWidthY: CGFloat, gestureRecognizer: UIGestureRecognizer?, traitCollection: UITraitCollection) -> Chart
     {
-        let yAxisValues = ChartAxisValuesStaticGenerator.generateYAxisValuesWithChartPoints(iobPoints + iobDisplayRangePoints, minSegmentCount: 2, maxSegmentCount: 3, multiple: 0.5, axisValueGenerator: { ChartAxisValueDouble($0, labelSettings: axisLabelSettings) }, addPaddingSegmentIfEdge: false)
+        let minScalar = xAxisValues.first?.scalar ?? 0
+        let maxScalar = xAxisValues.last?.scalar ?? 0
+        let clippedIOBPoints = iobPoints.clippedToHorizontalRange(
+            min: minScalar,
+            max: maxScalar,
+            unitString: Self.chartUnit.shortLocalizedUnitString(),
+            formatter: NumberFormatter.dose
+        )
+
+        let yAxisValues = ChartAxisValuesStaticGenerator.generateYAxisValuesWithChartPoints(clippedIOBPoints + iobDisplayRangePoints, minSegmentCount: 2, maxSegmentCount: 3, multiple: 0.5, axisValueGenerator: { ChartAxisValueDouble($0, labelSettings: axisLabelSettings) }, addPaddingSegmentIfEdge: false)
 
         let yAxisModel = ChartAxisModel(axisValues: yAxisValues, lineColor: colors.axisLine, labelSpaceReservationMode: .fixed(labelsWidthY))
 
@@ -58,7 +67,7 @@ public extension IOBChart {
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
         // The IOB area
-        let lineModel = ChartLineModel(chartPoints: iobPoints, lineColor: colors.insulinTint, lineWidth: 2.2, animDuration: 0, animDelay: 0)
+        let lineModel = ChartLineModel(chartPoints: clippedIOBPoints, lineColor: colors.insulinTint, lineWidth: 2.2, animDuration: 0, animDelay: 0)
         let iobLine = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
 
         let iobArea = ChartPointsFillsLayer(
@@ -66,7 +75,7 @@ public extension IOBChart {
             yAxis: yAxisLayer.axis,
             fills: [
                 ChartPointsFill(
-                    chartPoints: iobPoints,
+                    chartPoints: clippedIOBPoints,
                     fillColor: colors.insulinTint.withAlphaComponent(0.20),
                     linearGradient: (
                         topColor: colors.insulinTint.withAlphaComponent(0.55),
@@ -91,7 +100,7 @@ public extension IOBChart {
         let currentLayers = currentValueLayers(
             xAxis: xAxisLayer.axis,
             yAxis: yAxisLayer.axis,
-            chartPoints: iobPoints,
+            chartPoints: clippedIOBPoints,
             color: colors.insulinTint,
             date: currentDate
         )
@@ -116,7 +125,7 @@ public extension IOBChart {
                 xAxisLayer: xAxisLayer,
                 yAxisLayer: yAxisLayer,
                 axisLabelSettings: axisLabelSettings,
-                chartPoints: iobPoints,
+                chartPoints: clippedIOBPoints,
                 tintColor: colors.insulinTint,
                 gestureRecognizer: gestureRecognizer
             )
