@@ -58,10 +58,23 @@ public extension IOBChart {
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
         // The IOB area
-        let lineModel = ChartLineModel(chartPoints: iobPoints, lineColor: colors.insulinTint, lineWidth: 2, animDuration: 0, animDelay: 0)
+        let lineModel = ChartLineModel(chartPoints: iobPoints, lineColor: colors.insulinTint, lineWidth: 2.2, animDuration: 0, animDelay: 0)
         let iobLine = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
 
-        let iobArea = ChartPointsFillsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, fills: [ChartPointsFill(chartPoints: iobPoints, fillColor: colors.insulinTint.withAlphaComponent(0.5))])
+        let iobArea = ChartPointsFillsLayer(
+            xAxis: xAxisLayer.axis,
+            yAxis: yAxisLayer.axis,
+            fills: [
+                ChartPointsFill(
+                    chartPoints: iobPoints,
+                    fillColor: colors.insulinTint.withAlphaComponent(0.20),
+                    linearGradient: (
+                        topColor: colors.insulinTint.withAlphaComponent(0.55),
+                        bottomColor: colors.insulinTint.withAlphaComponent(0.02)
+                    )
+                )
+            ]
+        )
 
         // Grid lines
         let gridLayer = ChartGuideLinesForValuesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, settings: guideLinesLayerSettings, axisValuesX: Array(xAxisValues.dropFirst().dropLast()), axisValuesY: yAxisValues)
@@ -69,11 +82,15 @@ public extension IOBChart {
         // 0-line
         let dummyZeroChartPoint = ChartPoint(x: ChartAxisValueDouble(0), y: ChartAxisValueDouble(0))
         let zeroGuidelineLayer = ChartPointsViewsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: [dummyZeroChartPoint], viewGenerator: {(chartPointModel, layer, chart) -> UIView? in
-            let width: CGFloat = 0.5
+            let width: CGFloat = 1.0
             let viewFrame = CGRect(x: chart.contentView.bounds.minX, y: chartPointModel.screenLoc.y - width / 2, width: chart.contentView.bounds.size.width, height: width)
 
             let v = UIView(frame: viewFrame)
-            v.layer.backgroundColor = colors.insulinTint.cgColor
+            v.backgroundColor = UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark
+                    ? UIColor(white: 1.0, alpha: 0.14)
+                    : UIColor(white: 0.0, alpha: 0.12)
+            }
             return v
         })
 

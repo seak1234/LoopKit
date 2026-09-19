@@ -47,8 +47,12 @@ public class ChartPointsScatterDownTrianglesLayer<T: ChartPoint>: ChartPointsSca
         path.addLine(to: CGPoint(x: chartPointModel.screenLoc.x + horizontalOffset - w / 2, y: chartPointModel.screenLoc.y + verticalOffset - h / 2))
         path.closeSubpath()
 
+        context.saveGState()
+        context.setAllowsAntialiasing(true)
+        context.setShouldAntialias(true)
         context.setFillColor(self.itemFillColor.cgColor)
         context.addPath(path)
         context.fillPath()
+        context.restoreGState()
     }
 }

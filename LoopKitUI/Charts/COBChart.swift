@@ -55,13 +55,41 @@ public extension COBChart {
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
         // The COB area
-        let lineModel = ChartLineModel(chartPoints: cobPoints, lineColor: colors.carbTint, lineWidth: 2, animDuration: 0, animDelay: 0)
+        let lineModel = ChartLineModel(chartPoints: cobPoints, lineColor: colors.carbTint, lineWidth: 2.2, animDuration: 0, animDelay: 0)
         let cobLine = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
 
-        let cobArea = ChartPointsFillsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, fills: [ChartPointsFill(chartPoints: cobPoints, fillColor: colors.carbTint.withAlphaComponent(0.5))])
+        let cobArea = ChartPointsFillsLayer(
+            xAxis: xAxisLayer.axis,
+            yAxis: yAxisLayer.axis,
+            fills: [
+                ChartPointsFill(
+                    chartPoints: cobPoints,
+                    fillColor: colors.carbTint.withAlphaComponent(0.35),
+                    linearGradient: (
+                        topColor: colors.carbTint.withAlphaComponent(0.50),
+                        bottomColor: colors.carbTint.withAlphaComponent(0.02)
+                    )
+                )
+            ]
+        )
 
         // Grid lines
         let gridLayer = ChartGuideLinesForValuesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, settings: guideLinesLayerSettings, axisValuesX: Array(xAxisValues.dropFirst().dropLast()), axisValuesY: yAxisValues)
+
+        // 0-line
+        let dummyZeroChartPoint = ChartPoint(x: ChartAxisValueDouble(0), y: ChartAxisValueDouble(0))
+        let zeroGuidelineLayer = ChartPointsViewsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: [dummyZeroChartPoint], viewGenerator: {(chartPointModel, layer, chart) -> UIView? in
+            let width: CGFloat = 1.0
+            let viewFrame = CGRect(x: chart.contentView.bounds.minX, y: chartPointModel.screenLoc.y - width / 2, width: chart.contentView.bounds.size.width, height: width)
+
+            let v = UIView(frame: viewFrame)
+            v.backgroundColor = UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark
+                    ? UIColor(white: 1.0, alpha: 0.14)
+                    : UIColor(white: 0.0, alpha: 0.12)
+            }
+            return v
+        })
 
         if gestureRecognizer != nil {
             cobChartCache = ChartPointsTouchHighlightLayerViewCache(
@@ -78,6 +106,7 @@ public extension COBChart {
             gridLayer,
             xAxisLayer,
             yAxisLayer,
+            zeroGuidelineLayer,
             cobChartCache?.highlightLayer,
             cobArea,
             cobLine

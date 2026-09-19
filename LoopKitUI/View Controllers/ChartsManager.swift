@@ -40,7 +40,7 @@ open class ChartsManager {
 
         axisLabelSettings = ChartLabelSettings(font: axisLabelFont, fontColor: colors.axisLabel)
 
-        guideLinesLayerSettings = ChartGuideLinesLayerSettings(linesColor: colors.grid)
+        guideLinesLayerSettings = ChartGuideLinesLayerSettings(linesColor: colors.grid, linesWidth: 0.6)
     }
 
     // MARK: - Configuration

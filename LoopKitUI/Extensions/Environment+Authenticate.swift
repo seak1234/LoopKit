@@ -15,6 +15,9 @@ fileprivate struct UnknownError: Swift.Error { }
 
 public struct LocalAuthentication {
     public static let deviceOwnerCheck: AuthenticationChallenge = { authenticationChallengeDescription, completion in
+        #if targetEnvironment(simulator)
+        completion(.success(()))
+        #else
         let context = LAContext()
         var error: NSError?
         if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
@@ -30,6 +33,7 @@ public struct LocalAuthentication {
             // The logic here is to not fail to execute completion just because there is no authentication set up on the iPhone
             completion(.success(()))
         }
+        #endif
     }
 }
 

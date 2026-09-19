@@ -12,11 +12,18 @@ import UIKit
 struct ChartPointsFill {
     let chartPoints: [ChartPoint]
     let fillColor: UIColor
+    let linearGradient: (topColor: UIColor, bottomColor: UIColor)?
     let createContainerPoints: Bool
     let blendMode: CGBlendMode
     fileprivate var screenPoints: [CGPoint] = []
 
-    init?(chartPoints: [ChartPoint], fillColor: UIColor, createContainerPoints: Bool = true, blendMode: CGBlendMode = .normal) {
+    init?(
+        chartPoints: [ChartPoint],
+        fillColor: UIColor,
+        linearGradient: (topColor: UIColor, bottomColor: UIColor)? = nil,
+        createContainerPoints: Bool = true,
+        blendMode: CGBlendMode = .normal
+    ) {
         guard chartPoints.count > 1 else {
             return nil;
         }
@@ -36,6 +43,7 @@ struct ChartPointsFill {
 
         self.chartPoints = chartPoints
         self.fillColor = fillColor
+        self.linearGradient = linearGradient
         self.createContainerPoints = createContainerPoints
         self.blendMode = blendMode
     }
@@ -50,6 +58,8 @@ struct ChartPointsFill {
         for point in screenPoints.dropFirst() {
             path.addLine(to: point)
         }
+
+        path.close()
 
         return path
     }
@@ -92,7 +102,7 @@ final class ChartPointsFillsLayer: ChartCoordsSpaceLayer {
 
 class ChartPointsFillsView: UIView {
     let chartPointsFills: [ChartPointsFill]
-    var allowsAntialiasing = false
+    var allowsAntialiasing = true
 
     init(frame: CGRect, chartPointsFills: [ChartPointsFill]) {
         self.chartPointsFills = chartPointsFills
@@ -111,10 +121,38 @@ class ChartPointsFillsView: UIView {
 
         context.saveGState()
         context.setAllowsAntialiasing(allowsAntialiasing)
+        context.setShouldAntialias(allowsAntialiasing)
 
         for fill in chartPointsFills {
-            context.setFillColor(fill.fillColor.cgColor)
-            fill.areaPath.fill(with: fill.blendMode, alpha: 1)
+            let path = fill.areaPath
+            guard !path.isEmpty else { continue }
+
+            if let gradientColors = fill.linearGradient {
+                context.saveGState()
+                context.setBlendMode(fill.blendMode)
+                context.addPath(path.cgPath)
+                context.clip()
+
+                let bounds = path.bounds
+                if bounds.height > 0 {
+                    let colorSpace = CGColorSpaceCreateDeviceRGB()
+                    let cgColors = [gradientColors.topColor.cgColor, gradientColors.bottomColor.cgColor] as CFArray
+                    if let gradient = CGGradient(colorsSpace: colorSpace, colors: cgColors, locations: [0.0, 1.0]) {
+                        let startPoint = CGPoint(x: bounds.midX, y: bounds.minY)
+                        let endPoint = CGPoint(x: bounds.midX, y: bounds.maxY)
+                        context.drawLinearGradient(
+                            gradient,
+                            start: startPoint,
+                            end: endPoint,
+                            options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+                        )
+                    }
+                }
+                context.restoreGState()
+            } else {
+                context.setFillColor(fill.fillColor.cgColor)
+                path.fill(with: fill.blendMode, alpha: 1)
+            }
         }
 
         context.restoreGState()

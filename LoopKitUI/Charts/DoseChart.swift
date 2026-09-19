@@ -80,7 +80,7 @@ public extension DoseChart {
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
         // The dose area
-        let lineModel = ChartLineModel(chartPoints: points.basal, lineColor: colors.insulinTint, lineWidth: 2, animDuration: 0, animDelay: 0)
+        let lineModel = ChartLineModel(chartPoints: points.basal, lineColor: colors.insulinTint, lineWidth: 1.5, animDuration: 0, animDelay: 0)
         let doseLine = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
 
         let doseArea = ChartPointsFillsLayer(
@@ -88,7 +88,11 @@ public extension DoseChart {
             yAxis: yAxisLayer.axis,
             fills: [ChartPointsFill(
                 chartPoints: points.basalFill,
-                fillColor: colors.insulinTint.withAlphaComponent(0.5),
+                fillColor: colors.insulinTint.withAlphaComponent(0.28),
+                linearGradient: (
+                    topColor: colors.insulinTint.withAlphaComponent(0.40),
+                    bottomColor: colors.insulinTint.withAlphaComponent(0.08)
+                ),
                 createContainerPoints: false
             )]
         )
@@ -109,11 +113,15 @@ public extension DoseChart {
         // 0-line
         let dummyZeroChartPoint = ChartPoint(x: ChartAxisValueDouble(0), y: ChartAxisValueDouble(0))
         let zeroGuidelineLayer = ChartPointsViewsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: [dummyZeroChartPoint], viewGenerator: {(chartPointModel, layer, chart) -> UIView? in
-            let width: CGFloat = 1
+            let width: CGFloat = 1.0
             let viewFrame = CGRect(x: chart.contentView.bounds.minX, y: chartPointModel.screenLoc.y - width / 2, width: chart.contentView.bounds.size.width, height: width)
 
             let v = UIView(frame: viewFrame)
-            v.layer.backgroundColor = colors.insulinTint.cgColor
+            v.backgroundColor = UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark
+                    ? UIColor(white: 1.0, alpha: 0.14)
+                    : UIColor(white: 0.0, alpha: 0.12)
+            }
             return v
         })
 

@@ -134,8 +134,16 @@ extension PredictedGlucoseChart {
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
         // The glucose targets
-        let targetFill = colors.glucoseTint.withAlphaComponent(0.2)
-        let overrideFill: UIColor = colors.glucoseTint.withAlphaComponent(0.45)
+        let targetFill = UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.14)
+                : UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.10)
+        }
+        let overrideFill = UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.28)
+                : UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.22)
+        }
         let fills =
             targetGlucosePoints.map {
                 if $0.isOverride {
@@ -170,13 +178,36 @@ extension PredictedGlucoseChart {
         // Grid lines
         let gridLayer = ChartGuideLinesForValuesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, settings: guideLinesLayerSettings, axisValuesX: Array(xAxisValues.dropFirst().dropLast()), axisValuesY: yAxisValues)
 
-        let circles = ChartPointsScatterCirclesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: glucosePoints, displayDelay: 0, itemSize: CGSize(width: 4, height: 4), itemFillColor: colors.glucoseTint, optimized: true)
+        let circles = ChartPointsScatterCirclesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: glucosePoints, displayDelay: 0, itemSize: CGSize(width: 4.5, height: 4.5), itemFillColor: colors.glucoseTint, optimized: true)
+
+        var latestGlow: ChartLayer?
+        var latestDot: ChartLayer?
+        if let latestPoint = glucosePoints.last {
+            latestGlow = ChartPointsScatterCirclesLayer(
+                xAxis: xAxisLayer.axis,
+                yAxis: yAxisLayer.axis,
+                chartPoints: [latestPoint],
+                displayDelay: 0,
+                itemSize: CGSize(width: 16, height: 16),
+                itemFillColor: colors.glucoseTint.withAlphaComponent(0.25),
+                optimized: false
+            )
+            latestDot = ChartPointsScatterCirclesLayer(
+                xAxis: xAxisLayer.axis,
+                yAxis: yAxisLayer.axis,
+                chartPoints: [latestPoint],
+                displayDelay: 0,
+                itemSize: CGSize(width: 9, height: 9),
+                itemFillColor: colors.glucoseTint,
+                optimized: false
+            )
+        }
 
         var alternatePrediction: ChartLayer?
 
         if let altPoints = alternatePredictedGlucosePoints, altPoints.count > 1 {
 
-            let lineModel = ChartLineModel.predictionLine(points: altPoints, color: colors.glucoseTint, width: 2)
+            let lineModel = ChartLineModel.predictionLine(points: altPoints, color: colors.glucoseTint.withAlphaComponent(0.55), width: 1.5)
 
             alternatePrediction = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
         }
@@ -184,12 +215,12 @@ extension PredictedGlucoseChart {
         var prediction: ChartLayer?
 
         if predictedGlucosePoints.count > 1 {
-            let lineColor = (alternatePrediction == nil) ? colors.glucoseTint : UIColor.secondaryLabel
+            let lineColor = (alternatePrediction == nil) ? colors.glucoseTint.withAlphaComponent(0.55) : UIColor.secondaryLabel
 
             let lineModel = ChartLineModel.predictionLine(
                 points: predictedGlucosePoints,
                 color: lineColor,
-                width: 1
+                width: 1.5
             )
 
             prediction = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
@@ -214,7 +245,9 @@ extension PredictedGlucoseChart {
             glucoseChartCache?.highlightLayer,
             prediction,
             alternatePrediction,
-            circles
+            circles,
+            latestGlow,
+            latestDot
         ]
 
         return Chart(
