@@ -48,7 +48,11 @@ public extension EnvironmentValues {
 }
 
 private struct GlucoseTintColorKey: EnvironmentKey {
-    static let defaultValue: Color = Color(.systemTeal)
+    static let defaultValue: Color = Color(UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark
+            ? UIColor(red: 34/255, green: 211/255, blue: 238/255, alpha: 1.0)
+            : UIColor(red: 6/255, green: 182/255, blue: 212/255, alpha: 1.0)
+    })
 }
 
 public extension EnvironmentValues {

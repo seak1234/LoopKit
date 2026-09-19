@@ -29,11 +29,13 @@ public final class ChartTableViewCell: UITableViewCell {
         }
     }
 
+    private var currentDotColor: UIColor?
+
     public private(set) lazy var dotIndicatorView: UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
         view.layer.cornerRadius = 4
-        view.layer.masksToBounds = false
+        view.layer.masksToBounds = true
         view.isHidden = true
         return view
     }()
@@ -67,6 +69,12 @@ public final class ChartTableViewCell: UITableViewCell {
     public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         updateCardColors()
+        if let color = currentDotColor {
+            dotIndicatorView.backgroundColor = color
+        }
+        if let attributed = subtitleLabel?.attributedText {
+            subtitleLabel?.attributedText = NSAttributedString(attributedString: attributed)
+        }
     }
 
     private func updateCardColors() {
@@ -107,12 +115,9 @@ public final class ChartTableViewCell: UITableViewCell {
     }
 
     public func setDotColor(_ color: UIColor?) {
+        self.currentDotColor = color
         if let color = color {
             dotIndicatorView.backgroundColor = color
-            dotIndicatorView.layer.shadowColor = color.cgColor
-            dotIndicatorView.layer.shadowOffset = .zero
-            dotIndicatorView.layer.shadowRadius = 4
-            dotIndicatorView.layer.shadowOpacity = 0.7
             dotIndicatorView.isHidden = false
         } else {
             dotIndicatorView.isHidden = true
