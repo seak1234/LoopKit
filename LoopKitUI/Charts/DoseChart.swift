@@ -122,15 +122,6 @@ public extension DoseChart {
             color: colors.axisLabel.withAlphaComponent(0.35),
             date: currentDate
         )
-        let currentLayers = currentValueLayers(
-            xAxis: xAxisLayer.axis,
-            yAxis: yAxisLayer.axis,
-            chartPoints: points.basal,
-            color: colors.insulinTint,
-            date: currentDate,
-            interpolating: false
-        )
-
         // 0-line
         let dummyZeroChartPoint = ChartPoint(x: ChartAxisValueDouble(0), y: ChartAxisValueDouble(0))
         let zeroGuidelineLayer = ChartPointsViewsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: [dummyZeroChartPoint], viewGenerator: {(chartPointModel, layer, chart) -> UIView? in
@@ -166,9 +157,7 @@ public extension DoseChart {
             doseChartCache?.highlightLayer,
             doseArea,
             doseLine,
-            bolusLayer,
-            currentLayers.first,
-            currentLayers.last
+            bolusLayer
         ]
 
         let chart = Chart(frame: frame, innerFrame: innerFrame, settings: chartSettings, layers: layers.compactMap { $0 })
