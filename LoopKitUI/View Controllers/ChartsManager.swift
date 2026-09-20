@@ -202,7 +202,32 @@ open class ChartsManager {
         lastAxisValue.hidden = true
 
         var values: [ChartAxisValue] = [firstAxisValue]
-        var currentDate = startDate.addingTimeInterval(.hours(hourStep))
+
+        let calendar = Calendar.current
+        let intStep = Int(hourStep)
+        var currentDate: Date
+        if let nextHour = calendar.nextDate(after: startDate, matching: DateComponents(minute: 0), matchingPolicy: .strict, direction: .forward) {
+            if intStep > 1 {
+                let hour = calendar.component(.hour, from: nextHour)
+                let remainder = hour % intStep
+                if remainder == 0 {
+                    currentDate = nextHour
+                } else {
+                    let hoursToAdd = intStep - remainder
+                    currentDate = calendar.date(byAdding: .hour, value: hoursToAdd, to: nextHour) ?? nextHour
+                }
+            } else {
+                currentDate = nextHour
+            }
+        } else {
+            currentDate = startDate.addingTimeInterval(.hours(hourStep))
+        }
+
+        let minSpacingFromStart = TimeInterval(hours: hourStep * 0.35)
+        if currentDate.timeIntervalSince(startDate) < minSpacingFromStart {
+            currentDate = currentDate.addingTimeInterval(.hours(hourStep))
+        }
+
         let minSpacingFromEnd = TimeInterval(hours: hourStep * 0.5)
         while currentDate < endDate.addingTimeInterval(-minSpacingFromEnd) {
             let axisValue = ChartAxisValueDate(
