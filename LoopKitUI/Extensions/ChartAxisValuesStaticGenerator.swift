@@ -33,20 +33,41 @@ extension ChartAxisValuesStaticGenerator {
             let last = lastPar =~ first ? lastPar + 1 : lastPar
             
             /// The first axis value will be less than or equal to the first scalar value, aligned with the desired multiple
-            var firstValue = first - (first.truncatingRemainder(dividingBy: multiple))
+            let firstRemainder = first.truncatingRemainder(dividingBy: multiple)
+            var firstValue: Double
+            if firstRemainder =~ 0 || fabs(firstRemainder) < 1e-4 || fabs(fabs(firstRemainder) - multiple) < 1e-4 {
+                firstValue = first
+            } else if first < -0.01 {
+                firstValue = first - firstRemainder - multiple
+            } else if first < 0 {
+                firstValue = 0
+            } else {
+                firstValue = first - firstRemainder
+            }
+            firstValue = (firstValue / multiple).rounded() * multiple
+            if fabs(firstValue) < 1e-5 {
+                firstValue = 0
+            }
+
             /// The last axis value will be greater than or equal to the last scalar value, aligned with the desired multiple
             let remainder = last.truncatingRemainder(dividingBy: multiple)
-            var lastValue = remainder == 0 ? last : last + (multiple - remainder)
+            var lastValue: Double
+            if remainder =~ 0 || fabs(remainder) < 1e-4 || fabs(fabs(remainder) - multiple) < 1e-4 {
+                lastValue = last
+            } else if last < 0 {
+                lastValue = last - remainder
+            } else {
+                lastValue = last + (multiple - remainder)
+            }
+            lastValue = (lastValue / multiple).rounded() * multiple
+            if fabs(lastValue) < 1e-5 {
+                lastValue = 0
+            }
             var segmentSize = multiple
             
             /// If there should be a padding segment added when a scalar value falls on the first or last axis value, adjust the first and last axis values
             if firstValue =~ first && addPaddingSegmentIfEdge {
                firstValue = firstValue - segmentSize
-            }
-            
-            // do not allow the first label to be displayed as -0
-            while firstValue < 0 && firstValue.rounded() == -0 {
-                firstValue = firstValue - segmentSize
             }
             
             if lastValue =~ last && addPaddingSegmentIfEdge {
@@ -56,17 +77,12 @@ extension ChartAxisValuesStaticGenerator {
             let distance = lastValue - firstValue
             var currentMultiple = multiple
             var segmentCount = distance / currentMultiple
-            var potentialSegmentValues = stride(from: firstValue, to: lastValue, by: currentMultiple)
 
             /// Find the optimal number of segments and segment width
             /// If the number of segments is greater than desired, make each segment wider
-            /// ensure no label of -0 will be displayed on the axis
-            while segmentCount > maxSegmentCount ||
-                !potentialSegmentValues.filter({ $0 < 0 && $0.rounded() == -0 }).isEmpty
-            {
+            while segmentCount > maxSegmentCount {
                 currentMultiple += multiple
                 segmentCount = distance / currentMultiple
-                potentialSegmentValues = stride(from: firstValue, to: lastValue, by: currentMultiple)
             }
             segmentCount = ceil(segmentCount)
             
@@ -75,15 +91,18 @@ extension ChartAxisValuesStaticGenerator {
                 segmentCount += 1
             }
             segmentSize = currentMultiple
+
+            if first < -0.01 && currentMultiple > multiple {
+                firstValue = (first / currentMultiple).rounded(.down) * currentMultiple
+                if fabs(firstValue) < 1e-5 { firstValue = 0 }
+            }
             
             /// Generate axis values from the first value, segment size and number of segments
             let offset = firstValue
             return (0...Int(segmentCount)).map {segment in
                 var scalar = offset + (Double(segment) * segmentSize)
-                // a value that could be displayed as 0 should truly be 0 to have the zero-line drawn correctly.
-                if scalar != 0,
-                    scalar.rounded() == 0
-                {
+                // a value that could be displayed as 0 should truly be 0 to have the zero-line drawn correctly and avoid displaying -0
+                if scalar != 0 && (scalar =~ 0 || fabs(scalar) < 1e-5) {
                     scalar = 0
                 }
                 return axisValueGenerator(scalar)

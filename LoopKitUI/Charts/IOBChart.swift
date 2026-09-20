@@ -58,7 +58,17 @@ public extension IOBChart {
             formatter: NumberFormatter.dose
         )
 
-        let yAxisValues = ChartAxisValuesStaticGenerator.generateYAxisValuesWithChartPoints(clippedIOBPoints + iobDisplayRangePoints, minSegmentCount: 2, maxSegmentCount: 3, multiple: 0.5, axisValueGenerator: { ChartAxisValueDouble($0, labelSettings: axisLabelSettings) }, addPaddingSegmentIfEdge: false)
+        let hasNegativeIOB = clippedIOBPoints.contains { $0.y.scalar < -0.01 }
+        let maxSegmentCount: Double = hasNegativeIOB ? 4 : 3
+
+        let yAxisValues = ChartAxisValuesStaticGenerator.generateYAxisValuesUsingLinearSegmentStep(
+            chartPoints: clippedIOBPoints + iobDisplayRangePoints,
+            minSegmentCount: 2,
+            maxSegmentCount: maxSegmentCount,
+            multiple: 0.5,
+            axisValueGenerator: { ChartAxisValueDouble($0, labelSettings: axisLabelSettings) },
+            addPaddingSegmentIfEdge: false
+        )
 
         let yAxisModel = ChartAxisModel(axisValues: yAxisValues, lineColor: colors.axisLine, labelSpaceReservationMode: .fixed(labelsWidthY))
 
