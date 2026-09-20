@@ -257,6 +257,7 @@ public final class ChartTableViewCell: UITableViewCell {
     public func setAlpha(alpha: CGFloat) {
         titleLabel?.alpha = alpha
         subtitleLabel?.alpha = alpha
+        rightArrowHint?.alpha = alpha
         historyDurationSelector.alpha = alpha
     }
 }

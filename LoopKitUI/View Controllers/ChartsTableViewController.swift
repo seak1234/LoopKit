@@ -161,8 +161,7 @@ open class ChartsTableViewController: UITableViewController, UIGestureRecognizer
                 let forwards = gestureRecognizer.state == .began
                 UIView.animate(withDuration: forwards ? 0.2 : 0.5, delay: forwards ? 0 : 1, animations: {
                     let alpha: CGFloat = forwards ? 0 : 1
-                    row.titleLabel?.alpha = alpha
-                    row.subtitleLabel?.alpha = alpha
+                    row.setAlpha(alpha: alpha)
                 })
             }
         @unknown default:
