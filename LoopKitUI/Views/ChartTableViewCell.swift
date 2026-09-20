@@ -29,16 +29,6 @@ public final class ChartTableViewCell: UITableViewCell {
         }
     }
 
-    private var currentDotColor: UIColor?
-
-    public private(set) lazy var dotIndicatorView: UIView = {
-        let view = UIView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.layer.cornerRadius = 4
-        view.layer.masksToBounds = true
-        view.isHidden = true
-        return view
-    }()
 
     public private(set) lazy var historyDurationSelector: HistoryDurationSelectorControl = {
         let selector = HistoryDurationSelectorControl()
@@ -51,13 +41,13 @@ public final class ChartTableViewCell: UITableViewCell {
     public override func awakeFromNib() {
         super.awakeFromNib()
         setupCardAppearance()
-        setupDotIndicator()
+        setupTitleLabelLeadingConstraint()
     }
 
     public override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupCardAppearance()
-        setupDotIndicator()
+        setupTitleLabelLeadingConstraint()
     }
 
     required init?(coder: NSCoder) {
@@ -78,9 +68,6 @@ public final class ChartTableViewCell: UITableViewCell {
         super.traitCollectionDidChange(previousTraitCollection)
         updateCardColors()
         historyDurationSelector.updateColors()
-        if let color = currentDotColor {
-            dotIndicatorView.backgroundColor = color
-        }
         if let attributed = subtitleLabel?.attributedText {
             subtitleLabel?.attributedText = NSAttributedString(attributedString: attributed)
         }
@@ -103,10 +90,8 @@ public final class ChartTableViewCell: UITableViewCell {
         contentView.frame = bounds.inset(by: UIEdgeInsets(top: verticalMargin, left: horizontalMargin, bottom: verticalMargin, right: horizontalMargin))
     }
 
-    private func setupDotIndicator() {
-        guard let titleLabel = titleLabel, dotIndicatorView.superview == nil else { return }
-
-        contentView.addSubview(dotIndicatorView)
+    private func setupTitleLabelLeadingConstraint() {
+        guard let titleLabel = titleLabel else { return }
 
         for constraint in contentView.constraints {
             if (constraint.firstItem as? UIView) == titleLabel && constraint.firstAttribute == .leading {
@@ -114,13 +99,7 @@ public final class ChartTableViewCell: UITableViewCell {
             }
         }
 
-        NSLayoutConstraint.activate([
-            dotIndicatorView.widthAnchor.constraint(equalToConstant: 8),
-            dotIndicatorView.heightAnchor.constraint(equalToConstant: 8),
-            dotIndicatorView.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
-            dotIndicatorView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 14),
-            titleLabel.leadingAnchor.constraint(equalTo: dotIndicatorView.trailingAnchor, constant: 8)
-        ])
+        titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 14).isActive = true
     }
 
     private func setupHistoryDurationSelector() {
@@ -160,20 +139,13 @@ public final class ChartTableViewCell: UITableViewCell {
     }
 
     public func setDotColor(_ color: UIColor?) {
-        self.currentDotColor = color
-        if let color = color {
-            dotIndicatorView.backgroundColor = color
-            dotIndicatorView.isHidden = false
-        } else {
-            dotIndicatorView.isHidden = true
-        }
+        // No-op: dot indicators next to graph headers removed
     }
     
     public override func prepareForReuse() {
         super.prepareForReuse()
         doesNavigate = true
         chartContentView.chartGenerator = nil
-        dotIndicatorView.isHidden = true
         hideHistoryDurationSelector()
         titleLabel?.attributedText = nil
         titleLabel?.text = nil
@@ -254,7 +226,6 @@ public final class ChartTableViewCell: UITableViewCell {
     public func setAlpha(alpha: CGFloat) {
         titleLabel?.alpha = alpha
         subtitleLabel?.alpha = alpha
-        dotIndicatorView.alpha = alpha
         historyDurationSelector.alpha = alpha
     }
 }
