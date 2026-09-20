@@ -102,20 +102,51 @@ public final class ChartTableViewCell: UITableViewCell {
         titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 14).isActive = true
     }
 
+    private var historyDurationLeftSpacer: UILayoutGuide?
+    private var historyDurationRightSpacer: UILayoutGuide?
+
     private func setupHistoryDurationSelector() {
         guard let titleLabel = titleLabel, historyDurationSelector.superview == nil else { return }
 
         contentView.addSubview(historyDurationSelector)
 
-        var constraints = [
-            historyDurationSelector.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 8),
-            historyDurationSelector.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor)
+        let leftSpacer: UILayoutGuide
+        if let existing = historyDurationLeftSpacer {
+            leftSpacer = existing
+        } else {
+            leftSpacer = UILayoutGuide()
+            contentView.addLayoutGuide(leftSpacer)
+            historyDurationLeftSpacer = leftSpacer
+        }
+
+        let rightSpacer: UILayoutGuide
+        if let existing = historyDurationRightSpacer {
+            rightSpacer = existing
+        } else {
+            rightSpacer = UILayoutGuide()
+            contentView.addLayoutGuide(rightSpacer)
+            historyDurationRightSpacer = rightSpacer
+        }
+
+        var constraints: [NSLayoutConstraint] = [
+            historyDurationSelector.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            leftSpacer.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor),
+            leftSpacer.trailingAnchor.constraint(equalTo: historyDurationSelector.leadingAnchor),
+            leftSpacer.widthAnchor.constraint(greaterThanOrEqualToConstant: 4),
         ]
 
         if let subtitleLabel = subtitleLabel {
-            let spacing = subtitleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: historyDurationSelector.trailingAnchor, constant: 6)
-            spacing.priority = .defaultHigh
-            constraints.append(spacing)
+            let equalWidth = leftSpacer.widthAnchor.constraint(equalTo: rightSpacer.widthAnchor)
+            equalWidth.priority = UILayoutPriority(999)
+
+            constraints.append(contentsOf: [
+                rightSpacer.leadingAnchor.constraint(equalTo: historyDurationSelector.trailingAnchor),
+                rightSpacer.trailingAnchor.constraint(equalTo: subtitleLabel.leadingAnchor),
+                rightSpacer.widthAnchor.constraint(greaterThanOrEqualToConstant: 4),
+                equalWidth
+            ])
+        } else {
+            constraints.append(leftSpacer.widthAnchor.constraint(equalToConstant: 8))
         }
 
         historyDurationSelectorConstraints = constraints
@@ -129,7 +160,7 @@ public final class ChartTableViewCell: UITableViewCell {
         historyDurationSelector.isHidden = false
         NSLayoutConstraint.activate(historyDurationSelectorConstraints)
         subtitleLabel?.adjustsFontSizeToFitWidth = true
-        subtitleLabel?.minimumScaleFactor = 0.85
+        subtitleLabel?.minimumScaleFactor = 0.80
     }
 
     public func hideHistoryDurationSelector() {
@@ -231,7 +262,7 @@ public final class ChartTableViewCell: UITableViewCell {
 }
 
 public final class HistoryDurationSelectorControl: UIControl {
-    public static let availableHours: [Int] = [3, 6, 12, 24]
+    public static let availableHours: [Int] = [1, 3, 6, 12, 24]
 
     public var onDurationSelected: ((Int) -> Void)?
 
@@ -274,14 +305,14 @@ public final class HistoryDurationSelectorControl: UIControl {
             stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -1.5),
             stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 2),
             stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
-            widthAnchor.constraint(equalToConstant: 108),
+            widthAnchor.constraint(equalToConstant: 130),
             heightAnchor.constraint(equalToConstant: 22)
         ])
 
         for hours in Self.availableHours {
             let button = UIButton(type: .custom)
             button.setTitle("\(hours)h", for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 10.5, weight: .semibold)
+            button.titleLabel?.font = .systemFont(ofSize: 10, weight: .semibold)
             button.layer.cornerRadius = 9.5
             button.layer.masksToBounds = true
             button.tag = hours
@@ -328,11 +359,11 @@ public final class HistoryDurationSelectorControl: UIControl {
                     ? UIColor(white: 0.32, alpha: 1.0)
                     : UIColor.white
                 button.setTitleColor(isDark ? .white : .black, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: 10.5, weight: .bold)
+                button.titleLabel?.font = .systemFont(ofSize: 10, weight: .bold)
             } else {
                 button.backgroundColor = .clear
                 button.setTitleColor(.secondaryLabel, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: 10.5, weight: .medium)
+                button.titleLabel?.font = .systemFont(ofSize: 10, weight: .medium)
             }
         }
     }
