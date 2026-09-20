@@ -265,6 +265,95 @@ func currentTimeGuideLayer(
 }
 
 
+public final class ChartCurrentValueCircleLayer: ChartCoordsSpaceLayer {
+    public let chartPoint: ChartPoint
+    public let itemSize: CGSize
+    public let fillColor: UIColor
+    public let zPosition: CGFloat
+
+    private var circleView: UIView?
+
+    public init(
+        xAxis: ChartAxis,
+        yAxis: ChartAxis,
+        chartPoint: ChartPoint,
+        itemSize: CGSize,
+        fillColor: UIColor,
+        zPosition: CGFloat = 1000
+    ) {
+        self.chartPoint = chartPoint
+        self.itemSize = itemSize
+        self.fillColor = fillColor
+        self.zPosition = zPosition
+        super.init(xAxis: xAxis, yAxis: yAxis)
+    }
+
+    override public func chartInitialized(chart: Chart) {
+        super.chartInitialized(chart: chart)
+
+        let view = UIView(frame: CGRect(origin: .zero, size: itemSize))
+        view.backgroundColor = fillColor
+        view.layer.cornerRadius = min(itemSize.width, itemSize.height) / 2
+        view.layer.masksToBounds = true
+        view.layer.zPosition = zPosition
+        view.isUserInteractionEnabled = false
+        self.circleView = view
+
+        chart.view.addSubview(view)
+        updatePosition()
+    }
+
+    override public func update() {
+        super.update()
+        updatePosition()
+    }
+
+    override public func handleAxisInnerFrameChange(_ xLow: ChartAxisLayerWithFrameDelta?, yLow: ChartAxisLayerWithFrameDelta?, xHigh: ChartAxisLayerWithFrameDelta?, yHigh: ChartAxisLayerWithFrameDelta?) {
+        super.handleAxisInnerFrameChange(xLow, yLow: yLow, xHigh: xHigh, yHigh: yHigh)
+        updatePosition()
+    }
+
+    override public func zoom(_ x: CGFloat, y: CGFloat, centerX: CGFloat, centerY: CGFloat) {
+        super.zoom(x, y: y, centerX: centerX, centerY: centerY)
+        updatePosition()
+    }
+
+    override public func zoom(_ scaleX: CGFloat, scaleY: CGFloat, centerX: CGFloat, centerY: CGFloat) {
+        super.zoom(scaleX, scaleY: scaleY, centerX: centerX, centerY: centerY)
+        updatePosition()
+    }
+
+    override public func pan(_ deltaX: CGFloat, deltaY: CGFloat) {
+        super.pan(deltaX, deltaY: deltaY)
+        updatePosition()
+    }
+
+    override public func chartViewDrawing(context: CGContext, chart: Chart) {
+        super.chartViewDrawing(context: context, chart: chart)
+        updatePosition()
+    }
+
+    private func updatePosition() {
+        guard let chart = chart, let circleView = circleView else { return }
+
+        let isVisible = chartPoint.x.scalar >= xAxis.first && chartPoint.x.scalar <= xAxis.last
+        circleView.isHidden = !isVisible
+
+        if isVisible {
+            let screenLoc = modelLocToGlobalScreenLoc(x: chartPoint.x.scalar, y: chartPoint.y.scalar)
+            if circleView.center != screenLoc {
+                circleView.center = screenLoc
+            }
+            chart.view.bringSubviewToFront(circleView)
+        }
+    }
+
+    deinit {
+        circleView?.removeFromSuperview()
+    }
+}
+
+
 func currentValueLayers(
     xAxis: ChartAxis,
     yAxis: ChartAxis,
@@ -277,23 +366,21 @@ func currentValueLayers(
         return []
     }
 
-    let glow = ChartPointsScatterCirclesLayer(
+    let glow = ChartCurrentValueCircleLayer(
         xAxis: xAxis,
         yAxis: yAxis,
-        chartPoints: [currentPoint],
-        displayDelay: 0,
+        chartPoint: currentPoint,
         itemSize: CGSize(width: 16, height: 16),
-        itemFillColor: color.withAlphaComponent(0.25),
-        optimized: false
+        fillColor: color.withAlphaComponent(0.25),
+        zPosition: 999
     )
-    let dot = ChartPointsScatterCirclesLayer(
+    let dot = ChartCurrentValueCircleLayer(
         xAxis: xAxis,
         yAxis: yAxis,
-        chartPoints: [currentPoint],
-        displayDelay: 0,
+        chartPoint: currentPoint,
         itemSize: CGSize(width: 9, height: 9),
-        itemFillColor: color,
-        optimized: false
+        fillColor: color,
+        zPosition: 1000
     )
 
     return [glow, dot]
