@@ -39,6 +39,10 @@ public class PredictedGlucoseChart: GlucoseChart, ChartProviding {
         }
     }
 
+    /// Optional base color for the target-range band. When unset, the chart
+    /// retains its legacy blue target treatment.
+    public var targetGlucoseFillColor: UIColor?
+
     public var preMealOverride: TemporaryScheduleOverride? {
         didSet {
             preMealOverrideDurationPoints = []
@@ -134,13 +138,21 @@ extension PredictedGlucoseChart {
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
         // The glucose targets
-        let targetFill = UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark
+        let targetFill = UIColor { [targetGlucoseFillColor] traitCollection in
+            if let targetGlucoseFillColor {
+                let alpha: CGFloat = traitCollection.userInterfaceStyle == .dark ? 0.20 : 0.16
+                return targetGlucoseFillColor.resolvedColor(with: traitCollection).withAlphaComponent(alpha)
+            }
+            return traitCollection.userInterfaceStyle == .dark
                 ? UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.14)
                 : UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.10)
         }
-        let overrideFill = UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark
+        let overrideFill = UIColor { [targetGlucoseFillColor] traitCollection in
+            if let targetGlucoseFillColor {
+                let alpha: CGFloat = traitCollection.userInterfaceStyle == .dark ? 0.34 : 0.26
+                return targetGlucoseFillColor.resolvedColor(with: traitCollection).withAlphaComponent(alpha)
+            }
+            return traitCollection.userInterfaceStyle == .dark
                 ? UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.28)
                 : UIColor(red: 2/255, green: 132/255, blue: 199/255, alpha: 0.22)
         }
