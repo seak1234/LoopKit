@@ -8,6 +8,46 @@
 
 import UIKit
 
+private enum DashboardCardTheme {
+    static let coral = UIColor { _ in
+        UIColor(red: 251 / 255, green: 113 / 255, blue: 133 / 255, alpha: 1.0) // #FB7185
+    }
+    static let ink = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 1.00, green: 0.94, blue: 0.92, alpha: 1.0)
+            : UIColor(red: 0.25, green: 0.14, blue: 0.15, alpha: 1.0)
+    }
+    static let mutedInk = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.82, green: 0.68, blue: 0.66, alpha: 1.0)
+            : UIColor(red: 0.52, green: 0.36, blue: 0.37, alpha: 1.0)
+    }
+    static let surface = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.14, green: 0.10, blue: 0.11, alpha: 1.0)
+            : UIColor(red: 1.00, green: 0.985, blue: 0.975, alpha: 1.0)
+    }
+    static let border = UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor.white.withAlphaComponent(0.10)
+            : UIColor(red: 0.95, green: 0.84, blue: 0.81, alpha: 1.0)
+    }
+}
+
+private extension UIFont {
+    static func dashboardRounded(ofSize size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let font = UIFont.systemFont(ofSize: size, weight: weight)
+        guard let descriptor = font.fontDescriptor.withDesign(.rounded) else { return font }
+        return UIFont(descriptor: descriptor, size: size)
+    }
+
+    static func dashboardRoundedDigits(ofSize size: CGFloat, weight: UIFont.Weight) -> UIFont {
+        let font = UIFont.monospacedDigitSystemFont(ofSize: size, weight: weight)
+        guard let descriptor = font.fontDescriptor.withDesign(.rounded) else { return font }
+        return UIFont(descriptor: descriptor, size: size)
+    }
+}
+
 
 public final class ChartTableViewCell: UITableViewCell {
 
@@ -38,6 +78,99 @@ public final class ChartTableViewCell: UITableViewCell {
 
     private var historyDurationSelectorConstraints: [NSLayoutConstraint] = []
 
+    private lazy var collapsedSummaryView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.isHidden = true
+
+        view.addSubview(collapsedIconBackgroundView)
+        view.addSubview(collapsedIconView)
+        view.addSubview(collapsedTextStack)
+        view.addSubview(collapsedValueLabel)
+        view.addSubview(collapsedChevronView)
+
+        NSLayoutConstraint.activate([
+            collapsedIconBackgroundView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
+            collapsedIconBackgroundView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            collapsedIconBackgroundView.widthAnchor.constraint(equalToConstant: 48),
+            collapsedIconBackgroundView.heightAnchor.constraint(equalTo: collapsedIconBackgroundView.widthAnchor),
+
+            collapsedIconView.centerXAnchor.constraint(equalTo: collapsedIconBackgroundView.centerXAnchor),
+            collapsedIconView.centerYAnchor.constraint(equalTo: collapsedIconBackgroundView.centerYAnchor),
+            collapsedIconView.widthAnchor.constraint(equalToConstant: 24),
+            collapsedIconView.heightAnchor.constraint(equalToConstant: 24),
+
+            collapsedTextStack.leadingAnchor.constraint(equalTo: collapsedIconBackgroundView.trailingAnchor, constant: 14),
+            collapsedTextStack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            collapsedTextStack.trailingAnchor.constraint(lessThanOrEqualTo: collapsedValueLabel.leadingAnchor, constant: -10),
+
+            collapsedChevronView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
+            collapsedChevronView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            collapsedChevronView.widthAnchor.constraint(equalToConstant: 10),
+
+            collapsedValueLabel.trailingAnchor.constraint(equalTo: collapsedChevronView.leadingAnchor, constant: -12),
+            collapsedValueLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+
+        return view
+    }()
+
+    private let collapsedIconBackgroundView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.layer.cornerRadius = 24
+        return view
+    }()
+
+    private let collapsedIconView: UIImageView = {
+        let view = UIImageView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.contentMode = .scaleAspectFit
+        return view
+    }()
+
+    private let collapsedTitleLabel: UILabel = {
+        let label = UILabel()
+        label.font = .dashboardRounded(ofSize: 14, weight: .semibold)
+        label.textColor = DashboardCardTheme.ink
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.8
+        return label
+    }()
+
+    private let collapsedDetailLabel: UILabel = {
+        let label = UILabel()
+        label.font = .dashboardRounded(ofSize: 12, weight: .regular)
+        label.textColor = DashboardCardTheme.mutedInk
+        return label
+    }()
+
+    private lazy var collapsedTextStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [collapsedTitleLabel, collapsedDetailLabel])
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .vertical
+        stack.alignment = .leading
+        stack.spacing = 1
+        return stack
+    }()
+
+    private let collapsedValueLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = .dashboardRoundedDigits(ofSize: 20, weight: .bold)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        return label
+    }()
+
+    private let collapsedChevronView: UIImageView = {
+        let configuration = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        let view = UIImageView(image: UIImage(systemName: "chevron.right", withConfiguration: configuration))
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.contentMode = .scaleAspectFit
+        view.tintColor = DashboardCardTheme.coral
+        return view
+    }()
+
     public override func awakeFromNib() {
         super.awakeFromNib()
         setupCardAppearance()
@@ -60,7 +193,14 @@ public final class ChartTableViewCell: UITableViewCell {
         contentView.layer.cornerRadius = 16
         contentView.layer.masksToBounds = true
         contentView.layer.borderWidth = 1
-        rightArrowHint?.tintColor = .tertiaryLabel
+        contentView.addSubview(collapsedSummaryView)
+        NSLayoutConstraint.activate([
+            collapsedSummaryView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            collapsedSummaryView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            collapsedSummaryView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            collapsedSummaryView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        ])
+        rightArrowHint?.tintColor = DashboardCardTheme.coral
         updateCardColors()
     }
 
@@ -74,13 +214,8 @@ public final class ChartTableViewCell: UITableViewCell {
     }
 
     private func updateCardColors() {
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        contentView.backgroundColor = isDark
-            ? UIColor(red: 22/255, green: 22/255, blue: 25/255, alpha: 0.95)
-            : UIColor.secondarySystemGroupedBackground
-        contentView.layer.borderColor = isDark
-            ? UIColor.white.withAlphaComponent(0.08).cgColor
-            : UIColor(red: 226/255, green: 232/255, blue: 240/255, alpha: 1.0).cgColor
+        contentView.backgroundColor = DashboardCardTheme.surface
+        contentView.layer.borderColor = DashboardCardTheme.border.resolvedColor(with: traitCollection).cgColor
     }
 
     public override func layoutSubviews() {
@@ -182,6 +317,7 @@ public final class ChartTableViewCell: UITableViewCell {
         titleLabel?.text = nil
         subtitleLabel?.attributedText = nil
         subtitleLabel?.text = nil
+        setExpandedAppearance()
     }
 
     public func reloadChart() {
@@ -200,9 +336,9 @@ public final class ChartTableViewCell: UITableViewCell {
         }
         let uppercaseText = label.uppercased()
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 12, weight: .bold),
+            .font: UIFont.dashboardRounded(ofSize: 12, weight: .bold),
             .kern: 1.2,
-            .foregroundColor: UIColor.secondaryLabel
+            .foregroundColor: DashboardCardTheme.ink
         ]
         titleLabel?.attributedText = NSAttributedString(string: uppercaseText, attributes: attributes)
     }
@@ -219,14 +355,39 @@ public final class ChartTableViewCell: UITableViewCell {
             return
         }
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.monospacedDigitSystemFont(ofSize: 13, weight: .semibold),
-            .foregroundColor: UIColor.secondaryLabel
+            .font: UIFont.dashboardRoundedDigits(ofSize: 13, weight: .semibold),
+            .foregroundColor: DashboardCardTheme.mutedInk
         ]
         subtitleLabel?.attributedText = NSAttributedString(string: label, attributes: attributes)
     }
 
     public func setAttributedSubtitleLabel(_ attributedString: NSAttributedString?) {
         subtitleLabel?.attributedText = attributedString
+    }
+
+    public func setCollapsedAppearance(iconSystemName: String, title: String, detail: String, value: String?, tintColor: UIColor) {
+        chartContentView.isHidden = true
+        titleLabel?.isHidden = true
+        subtitleLabel?.isHidden = true
+        rightArrowHint?.isHidden = true
+        historyDurationSelector.isHidden = true
+
+        collapsedIconView.image = UIImage(systemName: iconSystemName)
+        collapsedIconView.tintColor = tintColor
+        collapsedIconBackgroundView.backgroundColor = tintColor.withAlphaComponent(0.12)
+        collapsedTitleLabel.text = title.uppercased()
+        collapsedDetailLabel.text = detail
+        collapsedValueLabel.text = value ?? "—"
+        collapsedValueLabel.textColor = tintColor
+        collapsedSummaryView.isHidden = false
+    }
+
+    public func setExpandedAppearance() {
+        collapsedSummaryView.isHidden = true
+        chartContentView.isHidden = false
+        titleLabel?.isHidden = false
+        subtitleLabel?.isHidden = false
+        rightArrowHint?.isHidden = !doesNavigate
     }
     
     public func removeSubtitleLabelText() {
@@ -313,7 +474,7 @@ public final class HistoryDurationSelectorControl: UIControl {
         for hours in Self.availableHours {
             let button = UIButton(type: .custom)
             button.setTitle("\(hours)h", for: .normal)
-            button.titleLabel?.font = .systemFont(ofSize: 10, weight: .semibold)
+            button.titleLabel?.font = .dashboardRounded(ofSize: 10, weight: .semibold)
             button.layer.cornerRadius = 9.5
             button.layer.masksToBounds = true
             button.tag = hours
@@ -335,13 +496,8 @@ public final class HistoryDurationSelectorControl: UIControl {
     }
 
     public func updateColors() {
-        let isDark = traitCollection.userInterfaceStyle == .dark
-        backgroundColor = isDark
-            ? UIColor(white: 1.0, alpha: 0.08)
-            : UIColor(white: 0.0, alpha: 0.06)
-        layer.borderColor = isDark
-            ? UIColor(white: 1.0, alpha: 0.12).cgColor
-            : UIColor(white: 0.0, alpha: 0.08).cgColor
+        backgroundColor = DashboardCardTheme.coral.withAlphaComponent(0.08)
+        layer.borderColor = DashboardCardTheme.border.resolvedColor(with: traitCollection).cgColor
 
         updateSelectedState()
     }
@@ -352,19 +508,16 @@ public final class HistoryDurationSelectorControl: UIControl {
     }
 
     private func updateSelectedState() {
-        let isDark = traitCollection.userInterfaceStyle == .dark
         for (hours, button) in buttons {
             let isSelected = (hours == selectedHours)
             if isSelected {
-                button.backgroundColor = isDark
-                    ? UIColor(white: 0.32, alpha: 1.0)
-                    : UIColor.white
-                button.setTitleColor(isDark ? .white : .black, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: 10, weight: .bold)
+                button.backgroundColor = DashboardCardTheme.coral
+                button.setTitleColor(.white, for: .normal)
+                button.titleLabel?.font = .dashboardRounded(ofSize: 10, weight: .bold)
             } else {
                 button.backgroundColor = .clear
-                button.setTitleColor(.secondaryLabel, for: .normal)
-                button.titleLabel?.font = .systemFont(ofSize: 10, weight: .medium)
+                button.setTitleColor(DashboardCardTheme.mutedInk, for: .normal)
+                button.titleLabel?.font = .dashboardRounded(ofSize: 10, weight: .medium)
             }
         }
     }
