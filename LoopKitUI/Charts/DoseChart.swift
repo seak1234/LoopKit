@@ -23,6 +23,9 @@ public class DoseChart: ChartProviding {
     public init() {
         doseEntries = []
     }
+
+    /// Controls whether the vertical guide marking the current time is drawn.
+    public var showsCurrentTimeGuide = true
     
     public var doseEntries: [DoseEntry] {
         didSet {
@@ -114,14 +117,16 @@ public extension DoseChart {
         let gridLayer = ChartGuideLinesForValuesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, settings: guideLinesLayerSettings, axisValuesX: Array(xAxisValues.dropFirst().dropLast()), axisValuesY: yAxisValues)
 
         let currentDate = Date()
-        let currentTimeLayer = currentTimeGuideLayer(
-            xAxis: xAxisLayer.axis,
-            yAxis: yAxisLayer.axis,
-            xAxisValues: xAxisValues,
-            yAxisValues: yAxisValues,
-            color: colors.axisLabel.withAlphaComponent(0.35),
-            date: currentDate
-        )
+        let currentTimeLayer = showsCurrentTimeGuide
+            ? currentTimeGuideLayer(
+                xAxis: xAxisLayer.axis,
+                yAxis: yAxisLayer.axis,
+                xAxisValues: xAxisValues,
+                yAxisValues: yAxisValues,
+                color: colors.axisLabel.withAlphaComponent(0.35),
+                date: currentDate
+            )
+            : nil
         // 0-line
         let dummyZeroChartPoint = ChartPoint(x: ChartAxisValueDouble(0), y: ChartAxisValueDouble(0))
         let zeroGuidelineLayer = ChartPointsViewsLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: [dummyZeroChartPoint], viewGenerator: {(chartPointModel, layer, chart) -> UIView? in

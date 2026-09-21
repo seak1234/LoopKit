@@ -13,6 +13,12 @@ import UIKit
 
 public class PredictedGlucoseChart: GlucoseChart, ChartProviding {
 
+    /// Controls whether future glucose predictions are drawn.
+    public var showsPrediction = true
+
+    /// Controls whether the vertical guide marking the current time is drawn.
+    public var showsCurrentTimeGuide = true
+
     public private(set) var glucosePoints: [ChartPoint] = [] {
         didSet {
             if let lastDate = glucosePoints.last?.x as? ChartAxisValueDate {
@@ -190,14 +196,16 @@ extension PredictedGlucoseChart {
         // Grid lines
         let gridLayer = ChartGuideLinesForValuesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, settings: guideLinesLayerSettings, axisValuesX: Array(xAxisValues.dropFirst().dropLast()), axisValuesY: yAxisValues)
 
-        let currentTimeLayer = currentTimeGuideLayer(
-            xAxis: xAxisLayer.axis,
-            yAxis: yAxisLayer.axis,
-            xAxisValues: xAxisValues,
-            yAxisValues: yAxisValues,
-            color: colors.axisLabel.withAlphaComponent(0.35),
-            date: Date()
-        )
+        let currentTimeLayer = showsCurrentTimeGuide
+            ? currentTimeGuideLayer(
+                xAxis: xAxisLayer.axis,
+                yAxis: yAxisLayer.axis,
+                xAxisValues: xAxisValues,
+                yAxisValues: yAxisValues,
+                color: colors.axisLabel.withAlphaComponent(0.35),
+                date: Date()
+            )
+            : nil
 
         let minScalar = xAxisLayer.axis.first
         let maxScalar = xAxisLayer.axis.last
@@ -237,7 +245,7 @@ extension PredictedGlucoseChart {
             $0.clippedToHorizontalRange(min: minScalar, max: maxScalar, unitString: unitString, formatter: unitFormatter.numberFormatter)
         }
 
-        if let altPoints = clippedAltPoints, altPoints.count > 1 {
+        if showsPrediction, let altPoints = clippedAltPoints, altPoints.count > 1 {
             let lineModel = ChartLineModel.predictionLine(points: altPoints, color: colors.glucoseTint.withAlphaComponent(0.55), width: 1.5)
 
             alternatePrediction = ChartPointsLineLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, lineModels: [lineModel])
@@ -247,7 +255,7 @@ extension PredictedGlucoseChart {
 
         let clippedPredictedPoints = predictedGlucosePoints.clippedToHorizontalRange(min: minScalar, max: maxScalar, unitString: unitString, formatter: unitFormatter.numberFormatter)
 
-        if clippedPredictedPoints.count > 1 {
+        if showsPrediction, clippedPredictedPoints.count > 1 {
             let lineColor = (alternatePrediction == nil) ? colors.glucoseTint.withAlphaComponent(0.55) : UIColor.secondaryLabel
 
             let lineModel = ChartLineModel.predictionLine(
@@ -260,9 +268,9 @@ extension PredictedGlucoseChart {
         }
 
         if gestureRecognizer != nil {
-            let cachePredictionPoints = (alternatePrediction != nil)
+            let cachePredictionPoints = showsPrediction && alternatePrediction != nil
                 ? (clippedAltPoints ?? [])
-                : clippedPredictedPoints
+                : (showsPrediction ? clippedPredictedPoints : [])
             glucoseChartCache = ChartPointsTouchHighlightLayerViewCache(
                 xAxisLayer: xAxisLayer,
                 yAxisLayer: yAxisLayer,
@@ -297,7 +305,7 @@ extension PredictedGlucoseChart {
     
     private func determineYAxisValues(axisLabelSettings: ChartLabelSettings? = nil) -> [ChartAxisValue] {
         let points = [
-            glucosePoints, predictedGlucosePoints,
+            glucosePoints, showsPrediction ? predictedGlucosePoints : [],
             preMealOverrideDurationPoints, targetOverrideDurationPoints,
             targetGlucosePoints.flatMap { $0.points },
             glucoseDisplayRangePoints

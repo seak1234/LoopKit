@@ -75,11 +75,37 @@ public final class ChartTableViewCell: UITableViewCell {
     /// Invoked when the value-and-chevron area in the card header is tapped.
     public var onNavigate: (() -> Void)?
 
+    /// Invoked when the graph name/header area is tapped.
+    public var onHeaderTap: (() -> Void)? {
+        didSet { setNeedsLayout() }
+    }
+
+    /// Invoked by a single tap inside the plotted graph area.
+    public var onPlotTap: (() -> Void)? {
+        didSet { setNeedsLayout() }
+    }
+
     private lazy var navigationButton: UIButton = {
         let button = UIButton(type: .custom)
         button.backgroundColor = .clear
         button.accessibilityLabel = NSLocalizedString("Show Details", comment: "Accessibility label for opening chart details")
         button.addTarget(self, action: #selector(navigationButtonTapped), for: .touchUpInside)
+        return button
+    }()
+
+    private lazy var headerButton: UIButton = {
+        let button = UIButton(type: .custom)
+        button.backgroundColor = .clear
+        button.accessibilityLabel = NSLocalizedString("Expand or collapse chart", comment: "Accessibility label for toggling a dashboard chart")
+        button.addTarget(self, action: #selector(headerButtonTapped), for: .touchUpInside)
+        return button
+    }()
+
+    private lazy var plotButton: UIButton = {
+        let button = UIButton(type: .custom)
+        button.backgroundColor = .clear
+        button.accessibilityLabel = NSLocalizedString("Show or hide chart prediction", comment: "Accessibility label for toggling prediction display across dashboard charts")
+        button.addTarget(self, action: #selector(plotButtonTapped), for: .touchUpInside)
         return button
     }()
 
@@ -208,6 +234,8 @@ public final class ChartTableViewCell: UITableViewCell {
         contentView.layer.masksToBounds = true
         contentView.layer.borderWidth = 1
         contentView.addSubview(collapsedSummaryView)
+        contentView.addSubview(plotButton)
+        contentView.addSubview(headerButton)
         contentView.addSubview(navigationButton)
         NSLayoutConstraint.activate([
             collapsedSummaryView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -238,12 +266,22 @@ public final class ChartTableViewCell: UITableViewCell {
         let horizontalMargin: CGFloat = 14
         let verticalMargin: CGFloat = 5
         contentView.frame = bounds.inset(by: UIEdgeInsets(top: verticalMargin, left: horizontalMargin, bottom: verticalMargin, right: horizontalMargin))
-        layoutNavigationButton()
+        layoutHeaderAndNavigationButtons()
     }
 
-    private func layoutNavigationButton() {
+    private func layoutHeaderAndNavigationButtons() {
+        let isExpanded = collapsedSummaryView.isHidden
+        if isExpanded, onPlotTap != nil, let chartContentView {
+            plotButton.frame = chartContentView.convert(chartContentView.bounds, to: contentView)
+            plotButton.isHidden = plotButton.frame.isEmpty
+        } else {
+            plotButton.isHidden = true
+        }
+        contentView.bringSubviewToFront(plotButton)
+
         guard doesNavigate else {
             navigationButton.isHidden = true
+            layoutHeaderButton(isExpanded: isExpanded, trailingEdge: contentView.bounds.maxX)
             return
         }
 
@@ -292,11 +330,41 @@ public final class ChartTableViewCell: UITableViewCell {
 
         navigationButton.frame = hitFrame
         navigationButton.isHidden = hitFrame.isEmpty
+        layoutHeaderButton(isExpanded: isExpanded, trailingEdge: hitFrame.minX)
+        contentView.bringSubviewToFront(headerButton)
         contentView.bringSubviewToFront(navigationButton)
+    }
+
+    private func layoutHeaderButton(isExpanded: Bool, trailingEdge: CGFloat) {
+        guard onHeaderTap != nil else {
+            headerButton.isHidden = true
+            return
+        }
+
+        if isExpanded, let titleLabel {
+            let titleFrame = titleLabel.convert(titleLabel.bounds, to: contentView)
+            headerButton.frame = CGRect(
+                x: 0,
+                y: 0,
+                width: min(trailingEdge, max(80, titleFrame.maxX + 12)),
+                height: max(44, titleFrame.maxY + 8)
+            )
+        } else {
+            headerButton.frame = CGRect(x: 0, y: 0, width: trailingEdge, height: contentView.bounds.height)
+        }
+        headerButton.isHidden = headerButton.frame.isEmpty
     }
 
     @objc private func navigationButtonTapped() {
         onNavigate?()
+    }
+
+    @objc private func headerButtonTapped() {
+        onHeaderTap?()
+    }
+
+    @objc private func plotButtonTapped() {
+        onPlotTap?()
     }
 
     private func setupTitleLabelLeadingConstraint() {
@@ -385,6 +453,8 @@ public final class ChartTableViewCell: UITableViewCell {
     public override func prepareForReuse() {
         super.prepareForReuse()
         onNavigate = nil
+        onHeaderTap = nil
+        onPlotTap = nil
         doesNavigate = true
         chartContentView.chartGenerator = nil
         hideHistoryDurationSelector()
@@ -398,7 +468,7 @@ public final class ChartTableViewCell: UITableViewCell {
     public func reloadChart() {
         chartContentView.reloadChart()
     }
-    
+
     public func setChartGenerator(generator: ((CGRect) -> UIView?)?) {
         chartContentView.chartGenerator = generator
     }

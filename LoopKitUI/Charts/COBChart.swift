@@ -16,6 +16,9 @@ public class COBChart: ChartProviding {
     public init() {
     }
 
+    /// Controls whether the vertical guide marking the current time is drawn.
+    public var showsCurrentTimeGuide = true
+
     /// The chart points for COB
     public private(set) var cobPoints: [ChartPoint] = [] {
         didSet {
@@ -86,14 +89,16 @@ public extension COBChart {
         let gridLayer = ChartGuideLinesForValuesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, settings: guideLinesLayerSettings, axisValuesX: Array(xAxisValues.dropFirst().dropLast()), axisValuesY: yAxisValues)
 
         let currentDate = Date()
-        let currentTimeLayer = currentTimeGuideLayer(
-            xAxis: xAxisLayer.axis,
-            yAxis: yAxisLayer.axis,
-            xAxisValues: xAxisValues,
-            yAxisValues: yAxisValues,
-            color: colors.axisLabel.withAlphaComponent(0.35),
-            date: currentDate
-        )
+        let currentTimeLayer = showsCurrentTimeGuide
+            ? currentTimeGuideLayer(
+                xAxis: xAxisLayer.axis,
+                yAxis: yAxisLayer.axis,
+                xAxisValues: xAxisValues,
+                yAxisValues: yAxisValues,
+                color: colors.axisLabel.withAlphaComponent(0.35),
+                date: currentDate
+            )
+            : nil
         let currentLayers = currentValueLayers(
             xAxis: xAxisLayer.axis,
             yAxis: yAxisLayer.axis,

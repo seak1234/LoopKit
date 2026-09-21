@@ -25,6 +25,16 @@ open class ChartsManager {
         return formatter
     }()
 
+    private lazy var timeWithMinutesFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        let dateFormat = DateFormatter.dateFormat(fromTemplate: "j", options: 0, locale: Locale.current)!
+        let isAmPmTimeFormat = dateFormat.firstIndex(of: "a") != nil
+        formatter.dateFormat = isAmPmTimeFormat
+            ? "h:mm a"
+            : "H:mm"
+        return formatter
+    }()
+
     public init(
         colors: ChartColorPalette,
         settings: ChartSettings,
@@ -63,6 +73,15 @@ open class ChartsManager {
     private let guideLinesLayerSettings: ChartGuideLinesLayerSettings
 
     public var gestureRecognizer: UIGestureRecognizer?
+
+    /// Overrides the automatically selected spacing between x-axis time marks.
+    /// Values smaller than one hour use labels that include minutes.
+    public var xAxisHourStepOverride: Double? {
+        didSet {
+            guard xAxisHourStepOverride != oldValue else { return }
+            xAxisValues = nil
+        }
+    }
 
     // MARK: - UITraitEnvironment
 
@@ -177,7 +196,9 @@ open class ChartsManager {
         }
 
         let hourStep: Double
-        if totalHours <= 9 {
+        if let xAxisHourStepOverride {
+            hourStep = xAxisHourStepOverride
+        } else if totalHours <= 9 {
             hourStep = 1
         } else if totalHours <= 14 {
             hourStep = 2
@@ -187,16 +208,18 @@ open class ChartsManager {
             hourStep = 6
         }
 
+        let axisTimeFormatter = hourStep < 1 ? timeWithMinutesFormatter : timeFormatter
+
         let firstAxisValue = ChartAxisValueDate(
             date: startDate,
-            formatter: timeFormatter,
+            formatter: axisTimeFormatter,
             labelSettings: axisLabelSettings
         )
         firstAxisValue.hidden = true
 
         let lastAxisValue = ChartAxisValueDate(
             date: endDate,
-            formatter: timeFormatter,
+            formatter: axisTimeFormatter,
             labelSettings: axisLabelSettings
         )
         lastAxisValue.hidden = true
@@ -204,9 +227,14 @@ open class ChartsManager {
         var values: [ChartAxisValue] = [firstAxisValue]
 
         let calendar = Calendar.current
-        let intStep = Int(hourStep)
         var currentDate: Date
-        if let nextHour = calendar.nextDate(after: startDate, matching: DateComponents(minute: 0), matchingPolicy: .strict, direction: .forward) {
+        if hourStep < 1 {
+            let minuteStep = Int(hourStep * 60)
+            let startMinute = calendar.component(.minute, from: startDate)
+            let minutesToAdd = minuteStep - (startMinute % minuteStep)
+            currentDate = calendar.date(byAdding: .minute, value: minutesToAdd, to: startDate) ?? startDate.addingTimeInterval(.hours(hourStep))
+        } else if let nextHour = calendar.nextDate(after: startDate, matching: DateComponents(minute: 0), matchingPolicy: .strict, direction: .forward) {
+            let intStep = Int(hourStep)
             if intStep > 1 {
                 let hour = calendar.component(.hour, from: nextHour)
                 let remainder = hour % intStep
@@ -232,7 +260,7 @@ open class ChartsManager {
         while currentDate < endDate.addingTimeInterval(-minSpacingFromEnd) {
             let axisValue = ChartAxisValueDate(
                 date: currentDate,
-                formatter: timeFormatter,
+                formatter: axisTimeFormatter,
                 labelSettings: axisLabelSettings
             )
             values.append(axisValue)

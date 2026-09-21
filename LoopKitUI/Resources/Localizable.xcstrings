@@ -13364,6 +13364,9 @@
         }
       }
     },
+    "Expand or collapse chart" : {
+      "comment" : "Accessibility label for toggling a dashboard chart"
+    },
     "Fast" : {
       "comment" : "Section title for fast absorbing food",
       "localizations" : {
@@ -25440,6 +25443,9 @@
     },
     "Show Details" : {
       "comment" : "Accessibility label for opening chart details"
+    },
+    "Show or hide chart prediction" : {
+      "comment" : "Accessibility label for toggling prediction display across dashboard charts"
     },
     "Slow" : {
       "comment" : "Section title for slow absorbing food",
