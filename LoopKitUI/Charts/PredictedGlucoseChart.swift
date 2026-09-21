@@ -107,7 +107,10 @@ extension PredictedGlucoseChart {
 
     public func generate(withFrame frame: CGRect, xAxisModel: ChartAxisModel, xAxisValues: [ChartAxisValue], axisLabelSettings: ChartLabelSettings, guideLinesLayerSettings: ChartGuideLinesLayerSettings, colors: ChartColorPalette, chartSettings: ChartSettings, labelsWidthY: CGFloat, gestureRecognizer: UIGestureRecognizer?, traitCollection: UITraitCollection) -> Chart
     {
-        if targetGlucosePoints.isEmpty, xAxisValues.count > 1, let schedule = targetGlucoseSchedule {
+        // Target bars are derived from the current x-axis bounds. Rebuild them
+        // whenever the chart is generated so changing history duration or
+        // toggling prediction cannot leave a band cached to the previous range.
+        if xAxisValues.count > 1, let schedule = targetGlucoseSchedule {
 
             // TODO: This only considers one override: pre-meal or an active override. ChartPoint.barsForGlucoseRangeSchedule needs to accept list of overridden ranges.
             let potentialOverride = (preMealOverride?.isActive() ?? false) ? preMealOverride : (scheduleOverride?.isActive() ?? false) ? scheduleOverride : nil
@@ -134,6 +137,10 @@ extension PredictedGlucoseChart {
             } else {
                 targetOverrideDurationPoints = []
             }
+        } else {
+            targetGlucosePoints = []
+            preMealOverrideDurationPoints = []
+            targetOverrideDurationPoints = []
         }
         
         let yAxisValues = determineYAxisValues(axisLabelSettings: axisLabelSettings)
