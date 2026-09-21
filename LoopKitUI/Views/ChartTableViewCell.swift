@@ -66,8 +66,22 @@ public final class ChartTableViewCell: UITableViewCell {
     public var doesNavigate: Bool = true {
         didSet {
             rightArrowHint?.isHidden = !doesNavigate
+            collapsedChevronView.isHidden = !doesNavigate
+            navigationButton.isHidden = !doesNavigate
+            setNeedsLayout()
         }
     }
+
+    /// Invoked when the value-and-chevron area in the card header is tapped.
+    public var onNavigate: (() -> Void)?
+
+    private lazy var navigationButton: UIButton = {
+        let button = UIButton(type: .custom)
+        button.backgroundColor = .clear
+        button.accessibilityLabel = NSLocalizedString("Show Details", comment: "Accessibility label for opening chart details")
+        button.addTarget(self, action: #selector(navigationButtonTapped), for: .touchUpInside)
+        return button
+    }()
 
 
     public private(set) lazy var historyDurationSelector: HistoryDurationSelectorControl = {
@@ -194,6 +208,7 @@ public final class ChartTableViewCell: UITableViewCell {
         contentView.layer.masksToBounds = true
         contentView.layer.borderWidth = 1
         contentView.addSubview(collapsedSummaryView)
+        contentView.addSubview(navigationButton)
         NSLayoutConstraint.activate([
             collapsedSummaryView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             collapsedSummaryView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
@@ -223,6 +238,65 @@ public final class ChartTableViewCell: UITableViewCell {
         let horizontalMargin: CGFloat = 14
         let verticalMargin: CGFloat = 5
         contentView.frame = bounds.inset(by: UIEdgeInsets(top: verticalMargin, left: horizontalMargin, bottom: verticalMargin, right: horizontalMargin))
+        layoutNavigationButton()
+    }
+
+    private func layoutNavigationButton() {
+        guard doesNavigate else {
+            navigationButton.isHidden = true
+            return
+        }
+
+        let valueView: UIView?
+        let chevronView: UIView?
+        if collapsedSummaryView.isHidden {
+            valueView = subtitleLabel
+            chevronView = rightArrowHint
+        } else {
+            valueView = collapsedValueLabel
+            chevronView = collapsedChevronView
+        }
+
+        guard let valueView, let chevronView else {
+            navigationButton.isHidden = true
+            return
+        }
+
+        let valueFrame = valueView.convert(valueView.bounds, to: contentView)
+        let chevronFrame = chevronView.convert(chevronView.bounds, to: contentView)
+        let visualFrame = valueFrame.union(chevronFrame)
+            .insetBy(dx: -12, dy: -12)
+            .intersection(contentView.bounds)
+
+        // Give the value and chevron a generous, predictable hit target. This
+        // also keeps the control distinct from the rest of the card, which is
+        // reserved for expanding and collapsing the graph.
+        let minimumWidth: CGFloat = 132
+        let leading = max(contentView.bounds.midX, min(visualFrame.minX, contentView.bounds.maxX - minimumWidth))
+        let hitFrame: CGRect
+        if collapsedSummaryView.isHidden {
+            hitFrame = CGRect(
+                x: leading,
+                y: 0,
+                width: contentView.bounds.maxX - leading,
+                height: max(44, visualFrame.maxY)
+            )
+        } else {
+            hitFrame = CGRect(
+                x: leading,
+                y: 0,
+                width: contentView.bounds.maxX - leading,
+                height: contentView.bounds.height
+            )
+        }
+
+        navigationButton.frame = hitFrame
+        navigationButton.isHidden = hitFrame.isEmpty
+        contentView.bringSubviewToFront(navigationButton)
+    }
+
+    @objc private func navigationButtonTapped() {
+        onNavigate?()
     }
 
     private func setupTitleLabelLeadingConstraint() {
@@ -310,6 +384,7 @@ public final class ChartTableViewCell: UITableViewCell {
     
     public override func prepareForReuse() {
         super.prepareForReuse()
+        onNavigate = nil
         doesNavigate = true
         chartContentView.chartGenerator = nil
         hideHistoryDurationSelector()
@@ -379,7 +454,9 @@ public final class ChartTableViewCell: UITableViewCell {
         collapsedDetailLabel.text = detail
         collapsedValueLabel.text = value ?? "—"
         collapsedValueLabel.textColor = tintColor
+        collapsedChevronView.isHidden = !doesNavigate
         collapsedSummaryView.isHidden = false
+        setNeedsLayout()
     }
 
     public func setExpandedAppearance() {
@@ -388,6 +465,7 @@ public final class ChartTableViewCell: UITableViewCell {
         titleLabel?.isHidden = false
         subtitleLabel?.isHidden = false
         rightArrowHint?.isHidden = !doesNavigate
+        setNeedsLayout()
     }
     
     public func removeSubtitleLabelText() {

@@ -25438,6 +25438,9 @@
         }
       }
     },
+    "Show Details" : {
+      "comment" : "Accessibility label for opening chart details"
+    },
     "Slow" : {
       "comment" : "Section title for slow absorbing food",
       "localizations" : {
