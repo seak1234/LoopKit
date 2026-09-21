@@ -10,7 +10,7 @@ import UIKit
 
 private enum DashboardCardTheme {
     static let coral = UIColor { _ in
-        UIColor(red: 251 / 255, green: 113 / 255, blue: 133 / 255, alpha: 1.0) // #FB7185
+        UIColor(red: 232 / 255, green: 130 / 255, blue: 136 / 255, alpha: 1.0) // #E88288
     }
     static let ink = UIColor { traits in
         traits.userInterfaceStyle == .dark
