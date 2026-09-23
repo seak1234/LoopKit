@@ -309,13 +309,13 @@ extension PredictedGlucoseChart {
             currentTimeLayer,
             xAxisLayer,
             yAxisLayer,
-            glucoseChartCache?.highlightLayer,
             prediction,
             alternatePrediction,
             circles,
             latestGlow,
             latestDot,
-            latestInnerDot
+            latestInnerDot,
+            glucoseChartCache?.highlightLayer
         ]
 
         return Chart(

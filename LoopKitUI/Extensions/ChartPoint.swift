@@ -292,6 +292,9 @@ public final class ChartCurrentValueCircleLayer: ChartCoordsSpaceLayer {
     public func setAlpha(_ alpha: CGFloat) {
         self.circleAlpha = alpha
         circleView?.alpha = alpha
+        if alpha > 0, let chart = chart, let circleView = circleView {
+            chart.view.bringSubviewToFront(circleView)
+        }
     }
 
     public init(

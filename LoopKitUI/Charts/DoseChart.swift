@@ -164,10 +164,10 @@ public extension DoseChart {
             xAxisLayer,
             yAxisLayer,
             zeroGuidelineLayer,
-            doseChartCache?.highlightLayer,
             doseArea,
             doseLine,
-            bolusLayer
+            bolusLayer,
+            doseChartCache?.highlightLayer
         ]
 
         let chart = Chart(frame: frame, innerFrame: innerFrame, settings: chartSettings, layers: layers.compactMap { $0 })

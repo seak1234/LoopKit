@@ -131,8 +131,8 @@ extension CarbEffectChart {
             xAxisLayer,
             yAxisLayer,
             zeroGuidelineLayer,
-            carbEffectChartCache?.highlightLayer,
-            effectsLayer
+            effectsLayer,
+            carbEffectChartCache?.highlightLayer
         ]
 
         return Chart(

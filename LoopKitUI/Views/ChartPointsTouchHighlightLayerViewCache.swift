@@ -128,8 +128,18 @@ final class ChartPointsTouchHighlightLayerViewCache {
                     strongSelf.setHighlightActive(true, animated: false)
                 }
 
+                if let layerView = strongSelf.highlightLayer?.view {
+                    if layerView.superview != chart.containerView {
+                        chart.containerView.addSubview(layerView)
+                    }
+                    layerView.frame = chart.containerView.bounds
+                    layerView.layer.zPosition = 2000
+                    chart.containerView.bringSubviewToFront(layerView)
+                }
+
                 let containerView = strongSelf.containerView
-                containerView.frame = chart.contentView.bounds
+                containerView.frame = chart.containerView.bounds
+                containerView.layer.zPosition = 2000
                 containerView.alpha = 1  // This is animated to 0 when touch last ended
 
                 let selectionGuideView = strongSelf.selectionGuideView
@@ -139,12 +149,14 @@ final class ChartPointsTouchHighlightLayerViewCache {
                     width: 1,
                     height: containerView.bounds.height
                 )
+                selectionGuideView.layer.zPosition = 1999
                 selectionGuideView.setNeedsLayout()
                 if selectionGuideView.superview == nil {
                     containerView.insertSubview(selectionGuideView, at: 0)
                 }
 
                 let xAxisOverlayView = strongSelf.xAxisOverlayView
+                xAxisOverlayView.layer.zPosition = 2000
                 if xAxisOverlayView.superview == nil {
                     xAxisOverlayView.frame = CGRect(
                         origin: CGPoint(x: containerView.bounds.minX,
@@ -158,6 +170,7 @@ final class ChartPointsTouchHighlightLayerViewCache {
 
                 let glowPoint = strongSelf.glowPoint
                 glowPoint.center = chartPointModel.screenLoc
+                glowPoint.layer.zPosition = 2001
                 if glowPoint.superview == nil {
                     glowPoint.fillColor = tintColor.withAlphaComponent(0.25)
                     containerView.addSubview(glowPoint)
@@ -165,6 +178,7 @@ final class ChartPointsTouchHighlightLayerViewCache {
 
                 let dotPoint = strongSelf.dotPoint
                 dotPoint.center = chartPointModel.screenLoc
+                dotPoint.layer.zPosition = 2002
                 if dotPoint.superview == nil {
                     dotPoint.fillColor = tintColor
                     containerView.addSubview(dotPoint)
@@ -172,10 +186,17 @@ final class ChartPointsTouchHighlightLayerViewCache {
 
                 let innerDotPoint = strongSelf.innerDotPoint
                 innerDotPoint.center = chartPointModel.screenLoc
+                innerDotPoint.layer.zPosition = 2003
                 if innerDotPoint.superview == nil {
                     innerDotPoint.fillColor = .white
                     containerView.addSubview(innerDotPoint)
                 }
+
+                containerView.bringSubviewToFront(selectionGuideView)
+                containerView.bringSubviewToFront(xAxisOverlayView)
+                containerView.bringSubviewToFront(glowPoint)
+                containerView.bringSubviewToFront(dotPoint)
+                containerView.bringSubviewToFront(innerDotPoint)
 
                 if let text = chartPointModel.chartPoint.y.labels.first?.text {
                     let label = strongSelf.labelY
@@ -186,12 +207,14 @@ final class ChartPointsTouchHighlightLayerViewCache {
                     label.center.x = chartPointModel.screenLoc.x
                     label.frame.origin.x = min(max(label.frame.origin.x, containerView.bounds.minX), containerView.bounds.maxX - label.frame.size.width)
                     label.frame.origin.makeIntegralInPlaceWithDisplayScale(chart.view.traitCollection.displayScale)
+                    label.layer.zPosition = 2004
 
                     if label.superview == nil {
                         label.textColor = tintColor
 
                         containerView.addSubview(label)
                     }
+                    containerView.bringSubviewToFront(label)
                 }
 
                 if let text = chartPointModel.chartPoint.x.labels.first?.text {
@@ -200,10 +223,12 @@ final class ChartPointsTouchHighlightLayerViewCache {
                     label.sizeToFit()
                     label.center = CGPoint(x: chartPointModel.screenLoc.x, y: xAxisOverlayView.center.y)
                     label.frame.origin.makeIntegralInPlaceWithDisplayScale(chart.view.traitCollection.displayScale)
+                    label.layer.zPosition = 2004
 
                     if label.superview == nil {
                         containerView.addSubview(label)
                     }
+                    containerView.bringSubviewToFront(label)
                 }
                 
                 return containerView

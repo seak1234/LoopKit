@@ -158,10 +158,11 @@ public extension IOBChart {
             xAxisLayer,
             yAxisLayer,
             zeroGuidelineLayer,
-            iobChartCache?.highlightLayer,
             iobArea,
             iobLine
-        ] + currentLayers
+        ] + currentLayers + [
+            iobChartCache?.highlightLayer
+        ]
 
         return Chart(frame: frame, innerFrame: innerFrame, settings: chartSettings, layers: layers.compactMap { $0 })
     }
