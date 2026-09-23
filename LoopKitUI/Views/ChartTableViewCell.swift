@@ -51,6 +51,13 @@ private extension UIFont {
 
 public final class ChartTableViewCell: UITableViewCell {
 
+    public var dashboardCardAccentColor: UIColor = DashboardCardTheme.coral {
+        didSet {
+            updateCardColors()
+            historyDurationSelector.accentColor = dashboardCardAccentColor
+        }
+    }
+
     @IBOutlet weak var chartContentView: ChartContainerView!
 
     @IBOutlet weak var titleLabel: UILabel?
@@ -259,6 +266,8 @@ public final class ChartTableViewCell: UITableViewCell {
     private func updateCardColors() {
         contentView.backgroundColor = DashboardCardTheme.surface
         contentView.layer.borderColor = DashboardCardTheme.border.resolvedColor(with: traitCollection).cgColor
+        rightArrowHint?.tintColor = dashboardCardAccentColor
+        collapsedChevronView.tintColor = dashboardCardAccentColor
     }
 
     public override func layoutSubviews() {
@@ -452,6 +461,7 @@ public final class ChartTableViewCell: UITableViewCell {
     
     public override func prepareForReuse() {
         super.prepareForReuse()
+        dashboardCardAccentColor = DashboardCardTheme.coral
         onNavigate = nil
         onHeaderTap = nil
         onPlotTap = nil
@@ -524,6 +534,7 @@ public final class ChartTableViewCell: UITableViewCell {
         collapsedDetailLabel.text = detail
         collapsedValueLabel.text = value ?? "—"
         collapsedValueLabel.textColor = tintColor
+        collapsedChevronView.tintColor = tintColor
         collapsedChevronView.isHidden = !doesNavigate
         collapsedSummaryView.isHidden = false
         setNeedsLayout()
@@ -575,6 +586,10 @@ public final class HistoryDurationSelectorControl: UIControl {
     public static let availableHours: [Int] = [1, 3, 6, 12, 24]
 
     public var onDurationSelected: ((Int) -> Void)?
+
+    public var accentColor: UIColor = DashboardCardTheme.coral {
+        didSet { updateColors() }
+    }
 
     public var selectedHours: Int = 3 {
         didSet {
@@ -644,7 +659,7 @@ public final class HistoryDurationSelectorControl: UIControl {
     }
 
     public func updateColors() {
-        backgroundColor = DashboardCardTheme.coral.withAlphaComponent(0.08)
+        backgroundColor = accentColor.withAlphaComponent(0.08)
         layer.borderColor = DashboardCardTheme.border.resolvedColor(with: traitCollection).cgColor
 
         updateSelectedState()
@@ -659,7 +674,7 @@ public final class HistoryDurationSelectorControl: UIControl {
         for (hours, button) in buttons {
             let isSelected = (hours == selectedHours)
             if isSelected {
-                button.backgroundColor = DashboardCardTheme.coral
+                button.backgroundColor = accentColor
                 button.setTitleColor(.white, for: .normal)
                 button.titleLabel?.font = .dashboardRounded(ofSize: 10, weight: .bold)
             } else {
