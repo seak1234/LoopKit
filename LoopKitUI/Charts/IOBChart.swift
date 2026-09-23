@@ -142,7 +142,13 @@ public extension IOBChart {
                 axisLabelSettings: axisLabelSettings,
                 chartPoints: clippedIOBPoints,
                 tintColor: colors.insulinTint,
-                gestureRecognizer: gestureRecognizer
+                selectionGuideColor: colors.axisLabel.withAlphaComponent(0.35),
+                gestureRecognizer: gestureRecognizer,
+                onHighlightStateChange: { [weak currentTimeLayer, currentLayers] isHighlighting in
+                    let alpha: CGFloat = isHighlighting ? 0 : 1
+                    currentTimeLayer?.setAlpha(alpha)
+                    currentLayers.forEach { $0.setAlpha(alpha) }
+                }
             )
         }
 

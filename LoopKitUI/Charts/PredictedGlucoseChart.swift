@@ -223,26 +223,24 @@ extension PredictedGlucoseChart {
         let visibleGlucosePoints = glucosePoints.filter { $0.x.scalar >= minScalar && $0.x.scalar <= maxScalar }
         let circles = ChartPointsScatterCirclesLayer(xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis, chartPoints: visibleGlucosePoints, displayDelay: 0, itemSize: CGSize(width: 4.5, height: 4.5), itemFillColor: colors.glucoseTint, optimized: true)
 
-        var latestGlow: ChartLayer?
-        var latestDot: ChartLayer?
+        var latestGlow: ChartCurrentValueCircleLayer?
+        var latestDot: ChartCurrentValueCircleLayer?
         if let latestPoint = visibleGlucosePoints.last {
-            latestGlow = ChartPointsScatterCirclesLayer(
+            latestGlow = ChartCurrentValueCircleLayer(
                 xAxis: xAxisLayer.axis,
                 yAxis: yAxisLayer.axis,
-                chartPoints: [latestPoint],
-                displayDelay: 0,
+                chartPoint: latestPoint,
                 itemSize: CGSize(width: 16, height: 16),
-                itemFillColor: colors.glucoseTint.withAlphaComponent(0.25),
-                optimized: false
+                fillColor: colors.glucoseTint.withAlphaComponent(0.25),
+                zPosition: 999
             )
-            latestDot = ChartPointsScatterCirclesLayer(
+            latestDot = ChartCurrentValueCircleLayer(
                 xAxis: xAxisLayer.axis,
                 yAxis: yAxisLayer.axis,
-                chartPoints: [latestPoint],
-                displayDelay: 0,
+                chartPoint: latestPoint,
                 itemSize: CGSize(width: 9, height: 9),
-                itemFillColor: colors.glucoseTint,
-                optimized: false
+                fillColor: colors.glucoseTint,
+                zPosition: 1000
             )
         }
 
@@ -284,7 +282,14 @@ extension PredictedGlucoseChart {
                 axisLabelSettings: axisLabelSettings,
                 chartPoints: visibleGlucosePoints + cachePredictionPoints,
                 tintColor: colors.glucoseTint,
-                gestureRecognizer: gestureRecognizer
+                selectionGuideColor: colors.axisLabel.withAlphaComponent(0.35),
+                gestureRecognizer: gestureRecognizer,
+                onHighlightStateChange: { [weak currentTimeLayer, weak latestGlow, weak latestDot] isHighlighting in
+                    let alpha: CGFloat = isHighlighting ? 0 : 1
+                    currentTimeLayer?.setAlpha(alpha)
+                    latestGlow?.setAlpha(alpha)
+                    latestDot?.setAlpha(alpha)
+                }
             )
         }
 

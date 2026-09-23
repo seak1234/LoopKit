@@ -149,7 +149,12 @@ public extension DoseChart {
                 axisLabelSettings: axisLabelSettings,
                 chartPoints: points.highlight,
                 tintColor: colors.insulinTint,
-                gestureRecognizer: gestureRecognizer
+                selectionGuideColor: colors.axisLabel.withAlphaComponent(0.35),
+                gestureRecognizer: gestureRecognizer,
+                onHighlightStateChange: { [weak currentTimeLayer] isHighlighting in
+                    let alpha: CGFloat = isHighlighting ? 0 : 1
+                    currentTimeLayer?.setAlpha(alpha)
+                }
             )
         }
 

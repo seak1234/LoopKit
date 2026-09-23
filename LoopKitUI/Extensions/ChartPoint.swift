@@ -227,6 +227,21 @@ public extension Collection where Element == ChartPoint {
 }
 
 
+public final class ChartCurrentTimeGuideLayer: ChartPointsLineLayer<ChartPoint> {
+    public private(set) var guideAlpha: CGFloat = 1.0
+
+    public func setAlpha(_ alpha: CGFloat) {
+        self.guideAlpha = alpha
+        lineViews.forEach { $0.alpha = alpha }
+    }
+
+    override public func display(chart: Chart) {
+        super.display(chart: chart)
+        lineViews.forEach { $0.alpha = guideAlpha }
+    }
+}
+
+
 func currentTimeGuideLayer(
     xAxis: ChartAxis,
     yAxis: ChartAxis,
@@ -234,7 +249,7 @@ func currentTimeGuideLayer(
     yAxisValues: [ChartAxisValue],
     color: UIColor,
     date: Date
-) -> ChartLayer? {
+) -> ChartCurrentTimeGuideLayer? {
     guard
         let firstXValue = xAxisValues.first,
         let lastXValue = xAxisValues.last,
@@ -257,7 +272,7 @@ func currentTimeGuideLayer(
         color: color,
         width: 1
     )
-    return ChartPointsLineLayer(
+    return ChartCurrentTimeGuideLayer(
         xAxis: xAxis,
         yAxis: yAxis,
         lineModels: [lineModel]
@@ -271,7 +286,13 @@ public final class ChartCurrentValueCircleLayer: ChartCoordsSpaceLayer {
     public let fillColor: UIColor
     public let zPosition: CGFloat
 
-    private var circleView: UIView?
+    public private(set) var circleView: UIView?
+    public private(set) var circleAlpha: CGFloat = 1.0
+
+    public func setAlpha(_ alpha: CGFloat) {
+        self.circleAlpha = alpha
+        circleView?.alpha = alpha
+    }
 
     public init(
         xAxis: ChartAxis,
@@ -297,6 +318,7 @@ public final class ChartCurrentValueCircleLayer: ChartCoordsSpaceLayer {
         view.layer.masksToBounds = true
         view.layer.zPosition = zPosition
         view.isUserInteractionEnabled = false
+        view.alpha = circleAlpha
         self.circleView = view
 
         chart.view.addSubview(view)
@@ -361,7 +383,7 @@ func currentValueLayers(
     color: UIColor,
     date: Date,
     interpolating: Bool = true
-) -> [ChartLayer] {
+) -> [ChartCurrentValueCircleLayer] {
     guard let currentPoint = chartPoints.pointAtCurrentTime(date, interpolating: interpolating) else {
         return []
     }

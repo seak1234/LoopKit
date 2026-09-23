@@ -10,12 +10,53 @@ import Foundation
 import SwiftCharts
 import UIKit
 
+private final class SelectionGuideView: UIView {
+    private let shapeLayer = CAShapeLayer()
+    private let strokeColor: UIColor
+
+    init(color: UIColor) {
+        self.strokeColor = color
+        super.init(frame: .zero)
+        isUserInteractionEnabled = false
+        shapeLayer.lineWidth = 1
+        shapeLayer.lineDashPattern = [3, 4]
+        shapeLayer.fillColor = nil
+        layer.addSublayer(shapeLayer)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        shapeLayer.frame = bounds
+        shapeLayer.strokeColor = strokeColor.resolvedColor(with: traitCollection).cgColor
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: bounds.midX, y: bounds.minY))
+        path.addLine(to: CGPoint(x: bounds.midX, y: bounds.maxY))
+        shapeLayer.path = path
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        shapeLayer.strokeColor = strokeColor.resolvedColor(with: traitCollection).cgColor
+    }
+}
+
 final class ChartPointsTouchHighlightLayerViewCache {
     private lazy var containerView = UIView(frame: .zero)
 
     private lazy var xAxisOverlayView = UIView()
 
-    private lazy var point = ChartPointEllipseView(center: .zero, diameter: 16)
+    private lazy var selectionGuideView: SelectionGuideView = {
+        let color = self.selectionGuideColor ?? self.axisLabelSettings.fontColor.withAlphaComponent(0.35)
+        return SelectionGuideView(color: color)
+    }()
+
+    private lazy var glowPoint = ChartPointEllipseView(center: .zero, diameter: 16)
+
+    private lazy var dotPoint = ChartPointEllipseView(center: .zero, diameter: 9)
 
     private lazy var labelY: UILabel = {
         let label = UILabel()
@@ -33,19 +74,42 @@ final class ChartPointsTouchHighlightLayerViewCache {
     }()
 
     private let axisLabelSettings: ChartLabelSettings
+    private let tintColor: UIColor
+    private let selectionGuideColor: UIColor?
+    private let onHighlightStateChange: ((_ isHighlighting: Bool) -> Void)?
+    private var isHighlighting = false
 
     private(set) var highlightLayer: ChartPointsTouchHighlightLayer<ChartPoint, UIView>!
 
-    init(xAxisLayer: ChartAxisLayer, yAxisLayer: ChartAxisLayer, axisLabelSettings: ChartLabelSettings, chartPoints: [ChartPoint], tintColor: UIColor, gestureRecognizer: UIGestureRecognizer? = nil, onCompleteHighlight: (() -> Void)? = nil) {
-
+    init(
+        xAxisLayer: ChartAxisLayer,
+        yAxisLayer: ChartAxisLayer,
+        axisLabelSettings: ChartLabelSettings,
+        chartPoints: [ChartPoint],
+        tintColor: UIColor,
+        selectionGuideColor: UIColor? = nil,
+        gestureRecognizer: UIGestureRecognizer? = nil,
+        onHighlightStateChange: ((_ isHighlighting: Bool) -> Void)? = nil,
+        onCompleteHighlight: (() -> Void)? = nil
+    ) {
         self.axisLabelSettings = axisLabelSettings
+        self.tintColor = tintColor
+        self.selectionGuideColor = selectionGuideColor
+        self.onHighlightStateChange = onHighlightStateChange
+
+        if let gestureRecognizer = gestureRecognizer {
+            gestureRecognizer.addTarget(self, action: #selector(handleGesture(_:)))
+        }
 
         highlightLayer = ChartPointsTouchHighlightLayer(
             xAxis: xAxisLayer.axis,
             yAxis: yAxisLayer.axis,
             chartPoints: chartPoints,
             gestureRecognizer: gestureRecognizer,
-            onCompleteHighlight: onCompleteHighlight,
+            onCompleteHighlight: { [weak self] in
+                self?.setHighlightActive(false, animated: false)
+                onCompleteHighlight?()
+            },
             modelFilter: { (screenLoc, chartPointModels) -> ChartPointLayerModel<ChartPoint>? in
                 if let index = chartPointModels.map({ $0.screenLoc.x }).findClosestElementIndex(matching: screenLoc.x) {
                     return chartPointModels[index]
@@ -58,9 +122,25 @@ final class ChartPointsTouchHighlightLayerViewCache {
                     return nil
                 }
 
+                if !strongSelf.isHighlighting {
+                    strongSelf.setHighlightActive(true, animated: false)
+                }
+
                 let containerView = strongSelf.containerView
                 containerView.frame = chart.contentView.bounds
                 containerView.alpha = 1  // This is animated to 0 when touch last ended
+
+                let selectionGuideView = strongSelf.selectionGuideView
+                selectionGuideView.frame = CGRect(
+                    x: chartPointModel.screenLoc.x - 0.5,
+                    y: containerView.bounds.minY,
+                    width: 1,
+                    height: containerView.bounds.height
+                )
+                selectionGuideView.setNeedsLayout()
+                if selectionGuideView.superview == nil {
+                    containerView.insertSubview(selectionGuideView, at: 0)
+                }
 
                 let xAxisOverlayView = strongSelf.xAxisOverlayView
                 if xAxisOverlayView.superview == nil {
@@ -74,11 +154,18 @@ final class ChartPointsTouchHighlightLayerViewCache {
                     containerView.addSubview(xAxisOverlayView)
                 }
 
-                let point = strongSelf.point
-                point.center = chartPointModel.screenLoc
-                if point.superview == nil {
-                    point.fillColor = tintColor.withAlphaComponent(0.5)
-                    containerView.addSubview(point)
+                let glowPoint = strongSelf.glowPoint
+                glowPoint.center = chartPointModel.screenLoc
+                if glowPoint.superview == nil {
+                    glowPoint.fillColor = tintColor.withAlphaComponent(0.25)
+                    containerView.addSubview(glowPoint)
+                }
+
+                let dotPoint = strongSelf.dotPoint
+                dotPoint.center = chartPointModel.screenLoc
+                if dotPoint.superview == nil {
+                    dotPoint.fillColor = tintColor
+                    containerView.addSubview(dotPoint)
                 }
 
                 if let text = chartPointModel.chartPoint.y.labels.first?.text {
@@ -113,5 +200,31 @@ final class ChartPointsTouchHighlightLayerViewCache {
                 return containerView
             }
         )
+    }
+
+    @objc private func handleGesture(_ gestureRecognizer: UIGestureRecognizer) {
+        switch gestureRecognizer.state {
+        case .began:
+            setHighlightActive(true, animated: true)
+        case .cancelled, .ended, .failed:
+            setHighlightActive(false, animated: true)
+        default:
+            break
+        }
+    }
+
+    private func setHighlightActive(_ active: Bool, animated: Bool) {
+        guard isHighlighting != active else { return }
+        isHighlighting = active
+
+        if animated {
+            let duration: TimeInterval = active ? 0.2 : 0.5
+            let delay: TimeInterval = active ? 0 : 1.0
+            UIView.animate(withDuration: duration, delay: delay, options: [.beginFromCurrentState], animations: {
+                self.onHighlightStateChange?(active)
+            }, completion: nil)
+        } else {
+            self.onHighlightStateChange?(active)
+        }
     }
 }
