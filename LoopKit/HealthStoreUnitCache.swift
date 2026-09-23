@@ -50,7 +50,67 @@ public class HealthStoreUnitCache {
         }
     }
 
+    public static let userPreferredGlucoseUnitKey = "UserPreferredGlucoseUnit"
+
+    public static var appGroupSuiteName: String? {
+        didSet {
+            if let suiteName = appGroupSuiteName {
+                appGroupUserDefaults = UserDefaults(suiteName: suiteName)
+            } else {
+                appGroupUserDefaults = nil
+            }
+        }
+    }
+
+    private static var appGroupUserDefaults: UserDefaults?
+
+    public static var userPreferredGlucoseUnit: HKUnit? {
+        get {
+            guard let string = userPreferredGlucoseUnitString else { return nil }
+            if string == "mmol/L" || string == HKUnit.millimolesPerLiter.unitString {
+                return .millimolesPerLiter
+            } else if string == "mg/dL" || string == HKUnit.milligramsPerDeciliter.unitString {
+                return .milligramsPerDeciliter
+            }
+            return nil
+        }
+        set {
+            userPreferredGlucoseUnitString = newValue?.unitString
+        }
+    }
+
+    public static var userPreferredGlucoseUnitString: String? {
+        get {
+            return (appGroupUserDefaults ?? UserDefaults.standard).string(forKey: userPreferredGlucoseUnitKey) ?? UserDefaults.standard.string(forKey: userPreferredGlucoseUnitKey)
+        }
+        set {
+            if let newValue = newValue {
+                appGroupUserDefaults?.set(newValue, forKey: userPreferredGlucoseUnitKey)
+                UserDefaults.standard.set(newValue, forKey: userPreferredGlucoseUnitKey)
+            } else {
+                appGroupUserDefaults?.removeObject(forKey: userPreferredGlucoseUnitKey)
+                UserDefaults.standard.removeObject(forKey: userPreferredGlucoseUnitKey)
+            }
+        }
+    }
+
+    public func setUserPreferredUnit(_ unit: HKUnit, for quantityTypeIdentifier: HKQuantityTypeIdentifier) {
+        if quantityTypeIdentifier == .bloodGlucose {
+            HealthStoreUnitCache.userPreferredGlucoseUnit = unit
+        }
+        updateCache(for: quantityTypeIdentifier, with: unit)
+    }
+
     public func preferredUnit(for quantityTypeIdentifier: HKQuantityTypeIdentifier) -> HKUnit? {
+        if quantityTypeIdentifier == .bloodGlucose,
+           let userUnit = HealthStoreUnitCache.userPreferredGlucoseUnit
+        {
+            if unitCache.value[quantityTypeIdentifier] != userUnit {
+                _ = unitCache.mutate { $0[quantityTypeIdentifier] = userUnit }
+            }
+            return userUnit
+        }
+
         if let unit = HealthStoreUnitCache.fixedUnits[quantityTypeIdentifier] {
             return unit
         }
