@@ -147,10 +147,8 @@ public extension COBChart {
             zeroGuidelineLayer,
             cobChartCache?.highlightLayer,
             cobArea,
-            cobLine,
-            currentLayers.first,
-            currentLayers.last
-        ]
+            cobLine
+        ] + currentLayers
 
         return Chart(frame: frame, innerFrame: innerFrame, settings: chartSettings, layers: layers.compactMap { $0 })
     }

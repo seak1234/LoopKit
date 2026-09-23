@@ -225,6 +225,7 @@ extension PredictedGlucoseChart {
 
         var latestGlow: ChartCurrentValueCircleLayer?
         var latestDot: ChartCurrentValueCircleLayer?
+        var latestInnerDot: ChartCurrentValueCircleLayer?
         if let latestPoint = visibleGlucosePoints.last {
             latestGlow = ChartCurrentValueCircleLayer(
                 xAxis: xAxisLayer.axis,
@@ -241,6 +242,14 @@ extension PredictedGlucoseChart {
                 itemSize: CGSize(width: 9, height: 9),
                 fillColor: colors.glucoseTint,
                 zPosition: 1000
+            )
+            latestInnerDot = ChartCurrentValueCircleLayer(
+                xAxis: xAxisLayer.axis,
+                yAxis: yAxisLayer.axis,
+                chartPoint: latestPoint,
+                itemSize: CGSize(width: 5, height: 5),
+                fillColor: .white,
+                zPosition: 1001
             )
         }
 
@@ -284,11 +293,12 @@ extension PredictedGlucoseChart {
                 tintColor: colors.glucoseTint,
                 selectionGuideColor: colors.axisLabel.withAlphaComponent(0.35),
                 gestureRecognizer: gestureRecognizer,
-                onHighlightStateChange: { [weak currentTimeLayer, weak latestGlow, weak latestDot] isHighlighting in
+                onHighlightStateChange: { [weak currentTimeLayer, weak latestGlow, weak latestDot, weak latestInnerDot] isHighlighting in
                     let alpha: CGFloat = isHighlighting ? 0 : 1
                     currentTimeLayer?.setAlpha(alpha)
                     latestGlow?.setAlpha(alpha)
                     latestDot?.setAlpha(alpha)
+                    latestInnerDot?.setAlpha(alpha)
                 }
             )
         }
@@ -304,7 +314,8 @@ extension PredictedGlucoseChart {
             alternatePrediction,
             circles,
             latestGlow,
-            latestDot
+            latestDot,
+            latestInnerDot
         ]
 
         return Chart(

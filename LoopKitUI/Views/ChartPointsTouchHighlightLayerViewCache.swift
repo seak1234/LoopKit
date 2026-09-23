@@ -58,6 +58,8 @@ final class ChartPointsTouchHighlightLayerViewCache {
 
     private lazy var dotPoint = ChartPointEllipseView(center: .zero, diameter: 9)
 
+    private lazy var innerDotPoint = ChartPointEllipseView(center: .zero, diameter: 5)
+
     private lazy var labelY: UILabel = {
         let label = UILabel()
         label.font = UIFont.monospacedDigitSystemFont(ofSize: 15, weight: UIFont.Weight.bold)
@@ -166,6 +168,13 @@ final class ChartPointsTouchHighlightLayerViewCache {
                 if dotPoint.superview == nil {
                     dotPoint.fillColor = tintColor
                     containerView.addSubview(dotPoint)
+                }
+
+                let innerDotPoint = strongSelf.innerDotPoint
+                innerDotPoint.center = chartPointModel.screenLoc
+                if innerDotPoint.superview == nil {
+                    innerDotPoint.fillColor = .white
+                    containerView.addSubview(innerDotPoint)
                 }
 
                 if let text = chartPointModel.chartPoint.y.labels.first?.text {

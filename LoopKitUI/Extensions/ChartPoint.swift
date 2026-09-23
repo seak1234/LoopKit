@@ -404,8 +404,16 @@ func currentValueLayers(
         fillColor: color,
         zPosition: 1000
     )
+    let innerDot = ChartCurrentValueCircleLayer(
+        xAxis: xAxis,
+        yAxis: yAxis,
+        chartPoint: currentPoint,
+        itemSize: CGSize(width: 5, height: 5),
+        fillColor: .white,
+        zPosition: 1001
+    )
 
-    return [glow, dot]
+    return [glow, dot, innerDot]
 }
 
 
