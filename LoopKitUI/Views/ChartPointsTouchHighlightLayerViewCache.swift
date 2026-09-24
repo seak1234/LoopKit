@@ -81,6 +81,10 @@ final class ChartPointsTouchHighlightLayerViewCache {
     private let onHighlightStateChange: ((_ isHighlighting: Bool) -> Void)?
     private var isHighlighting = false
 
+    private let selectionFeedback = UISelectionFeedbackGenerator()
+    private var isDirectlyInteracted = false
+    private var lastHighlightedPointIndex: Int?
+
     private(set) var highlightLayer: ChartPointsTouchHighlightLayer<ChartPoint, UIView>!
 
     init(
@@ -109,6 +113,8 @@ final class ChartPointsTouchHighlightLayerViewCache {
             chartPoints: chartPoints,
             gestureRecognizer: gestureRecognizer,
             onCompleteHighlight: { [weak self] in
+                self?.isDirectlyInteracted = false
+                self?.lastHighlightedPointIndex = nil
                 self?.setHighlightActive(false, animated: false)
                 onCompleteHighlight?()
             },
@@ -122,6 +128,15 @@ final class ChartPointsTouchHighlightLayerViewCache {
             viewGenerator: { [weak self] (chartPointModel, layer, chart) -> UIView? in
                 guard let strongSelf = self else {
                     return nil
+                }
+
+                if strongSelf.isDirectlyInteracted {
+                    if let lastIndex = strongSelf.lastHighlightedPointIndex,
+                       lastIndex != chartPointModel.index {
+                        strongSelf.selectionFeedback.selectionChanged()
+                        strongSelf.selectionFeedback.prepare()
+                    }
+                    strongSelf.lastHighlightedPointIndex = chartPointModel.index
                 }
 
                 if !strongSelf.isHighlighting {
@@ -239,8 +254,20 @@ final class ChartPointsTouchHighlightLayerViewCache {
     @objc private func handleGesture(_ gestureRecognizer: UIGestureRecognizer) {
         switch gestureRecognizer.state {
         case .began:
+            if let view = highlightLayer?.view, view.window != nil {
+                let loc = gestureRecognizer.location(in: view)
+                isDirectlyInteracted = view.bounds.insetBy(dx: 0, dy: -20).contains(loc)
+            } else {
+                isDirectlyInteracted = true
+            }
+
+            if isDirectlyInteracted {
+                selectionFeedback.prepare()
+            }
             setHighlightActive(true, animated: true)
         case .cancelled, .ended, .failed:
+            isDirectlyInteracted = false
+            lastHighlightedPointIndex = nil
             setHighlightActive(false, animated: true)
         default:
             break
