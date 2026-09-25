@@ -53,8 +53,8 @@ class GuardrailTests: XCTestCase {
     }
     
     func testMinCorrectionRangeValue() {
-        let suspendThresholdInputs: [Double?] = [ nil, 80, 88 ]
-        let expected: [Double] = [ 86.1, 86.1, 88 ]
+        let suspendThresholdInputs: [Double?] = [ nil, 80, 81, 88 ]
+        let expected: [Double] = [ 80, 80, 81, 88 ]
         for (index, suspendThreshold) in suspendThresholdInputs.enumerated() {
             XCTAssertEqual(expected[index], Guardrail.minCorrectionRangeValue(suspendThreshold: suspendThreshold.map { GlucoseThreshold(unit: .milligramsPerDeciliter, value: $0) }).doubleValue(for: .milligramsPerDeciliter), "Index \(index) failed")
         }
@@ -62,13 +62,14 @@ class GuardrailTests: XCTestCase {
     
     func testCorrectionRange() {
         let guardrail = Guardrail.correctionRange
+        XCTAssertEqual(80, guardrail.absoluteBounds.roundedDisplayValues(for: .milligramsPerDeciliter).first)
         let expectedAndTest: [(SafetyClassification, Double)] = [
             (SafetyClassification.withinRecommendedRange, 100),
             (SafetyClassification.withinRecommendedRange, 115),
             (SafetyClassification.outsideRecommendedRange(.belowRecommended), 99),
             (SafetyClassification.outsideRecommendedRange(.aboveRecommended), 116),
             (SafetyClassification.outsideRecommendedRange(.maximum), 180.9),
-            (SafetyClassification.outsideRecommendedRange(.minimum), 86.1),
+            (SafetyClassification.outsideRecommendedRange(.minimum), 80),
         ]
         
         for test in expectedAndTest {
@@ -79,10 +80,10 @@ class GuardrailTests: XCTestCase {
     func testWorkoutCorrectionRange() {
         let correctionRangeInputs = [ 70...80, 70...85, 70...90 ]
         let suspendThresholdInputs: [Double?] = [ nil, 81, 91 ]
-        let expectedLow: [Double] = [ 86.1, 86.1, 91,
-                                      86.1, 86.1, 91,
+        let expectedLow: [Double] = [ 80, 81, 91,
+                                      85, 85, 91,
                                       90, 90, 91 ]
-        let expectedMin: [Double] = [ 86.1, 86.1, 91, 86.1, 86.1, 91, 86.1, 86.1, 91 ]
+        let expectedMin: [Double] = [ 80, 81, 91, 80, 81, 91, 80, 81, 91 ]
 
         var index = 0
         for correctionRange in correctionRangeInputs {
