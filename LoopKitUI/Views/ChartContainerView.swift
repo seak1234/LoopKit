@@ -38,7 +38,9 @@ public class ChartContainerView: UIView {
 
     private var chartView: UIView? {
         didSet {
-            if let view = oldValue {
+            // A cached chart can move to a replacement cell during a row
+            // animation. The outgoing cell must not detach its replacement's view.
+            if let view = oldValue, view.superview === self {
                 view.removeFromSuperview()
             }
 

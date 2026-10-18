@@ -74,6 +74,7 @@ open class ChartsTableViewController: UITableViewController, UIGestureRecognizer
         super.viewWillDisappear(animated)
 
         visible = false
+        updateChartHeaderVisibility()
     }
 
     open override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
@@ -113,6 +114,9 @@ open class ChartsTableViewController: UITableViewController, UIGestureRecognizer
 
     open var active: Bool = true {
         didSet {
+            if !active {
+                updateChartHeaderVisibility()
+            }
             reloadData()
         }
     }
@@ -120,6 +124,27 @@ open class ChartsTableViewController: UITableViewController, UIGestureRecognizer
     public var visible = false {
         didSet {
             reloadData()
+        }
+    }
+
+    /// Terminal gesture states (including cancellation and failure) show headers.
+    public var chartHeaderAlpha: CGFloat {
+        guard active && visible else { return 1 }
+        switch charts.gestureRecognizer?.state {
+        case .began?, .changed?:
+            return 0
+        default:
+            return 1
+        }
+    }
+
+    open override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        (cell as? ChartTableViewCell)?.setAlpha(alpha: chartHeaderAlpha)
+    }
+
+    private func updateChartHeaderVisibility(animated: Bool = false) {
+        for case let cell as ChartTableViewCell in tableView.visibleCells {
+            cell.setAlpha(alpha: chartHeaderAlpha, animated: animated)
         }
     }
 
@@ -157,13 +182,7 @@ open class ChartsTableViewController: UITableViewController, UIGestureRecognizer
             // Follow your dreams!
             break
         case .began, .cancelled, .ended, .failed:
-            for case let row as ChartTableViewCell in self.tableView.visibleCells {
-                let forwards = gestureRecognizer.state == .began
-                UIView.animate(withDuration: forwards ? 0.2 : 0.5, delay: forwards ? 0 : 1, animations: {
-                    let alpha: CGFloat = forwards ? 0 : 1
-                    row.setAlpha(alpha: alpha)
-                })
-            }
+            updateChartHeaderVisibility(animated: true)
         @unknown default:
             break
         }

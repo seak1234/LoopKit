@@ -472,6 +472,7 @@ public final class ChartTableViewCell: UITableViewCell {
         titleLabel?.text = nil
         subtitleLabel?.attributedText = nil
         subtitleLabel?.text = nil
+        setAlpha(alpha: 1)
         setExpandedAppearance()
     }
 
@@ -574,11 +575,18 @@ public final class ChartTableViewCell: UITableViewCell {
         }
     }
     
-    public func setAlpha(alpha: CGFloat) {
-        titleLabel?.alpha = alpha
-        subtitleLabel?.alpha = alpha
-        rightArrowHint?.alpha = alpha
-        historyDurationSelector.alpha = alpha
+    public func setAlpha(alpha: CGFloat, animated: Bool = false) {
+        let headerViews = ([titleLabel, subtitleLabel, rightArrowHint, historyDurationSelector] as [UIView?]).compactMap { $0 }
+        let changes = {
+            headerViews.forEach { $0.alpha = alpha }
+        }
+        if animated {
+            UIView.animate(withDuration: alpha == 0 ? 0.2 : 0.5, delay: 0,
+                           options: [.beginFromCurrentState, .allowUserInteraction], animations: changes)
+        } else {
+            headerViews.forEach { $0.layer.removeAnimation(forKey: "opacity") }
+            changes()
+        }
     }
 }
 
