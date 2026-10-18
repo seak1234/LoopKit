@@ -95,13 +95,16 @@ extension ChartPoint {
     }
 
     private static func pointsForGlucoseRangeScheduleOverride(range: DoubleRange, activeInterval: DateInterval, unit: HKUnit, xAxisValues: [ChartAxisValue], extendEndDateToChart: Bool) -> [ChartPoint] {
-        guard let lastXAxisValue = xAxisValues.last as? ChartAxisValueDate else {
+        guard let firstXAxisValue = xAxisValues.first as? ChartAxisValueDate,
+              let lastXAxisValue = xAxisValues.last as? ChartAxisValueDate else {
             return []
         }
 
         let dateFormatter = DateFormatter()
-        let startDateAxisValue = ChartAxisValueDate(date: activeInterval.start, formatter: dateFormatter)
+        let displayStartDate = max(firstXAxisValue.date, activeInterval.start)
         let displayEndDate = min(lastXAxisValue.date, extendEndDateToChart ? .distantFuture : activeInterval.end)
+        guard displayStartDate < displayEndDate else { return [] }
+        let startDateAxisValue = ChartAxisValueDate(date: displayStartDate, formatter: dateFormatter)
         let endDateAxisValue = ChartAxisValueDate(date: displayEndDate, formatter: dateFormatter)
         let minValue = ChartAxisValueDouble(range.minValue)
         let maxValue = ChartAxisValueDouble(range.maxValue)

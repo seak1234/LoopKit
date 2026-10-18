@@ -66,11 +66,23 @@ struct ChartPointsFill {
 }
 
 
+extension ChartCoordsSpaceLayer {
+    /// Axis endpoints mapped into the same local coordinates as chart.addSubview.
+    var plotFrameInContentCoordinates: CGRect {
+        let first = modelLocToScreenLoc(x: xAxis.first, y: yAxis.first)
+        let last = modelLocToScreenLoc(x: xAxis.last, y: yAxis.last)
+        return CGRect(x: min(first.x, last.x), y: min(first.y, last.y),
+                      width: abs(last.x - first.x), height: abs(last.y - first.y))
+    }
+}
+
 final class ChartPointsFillsLayer: ChartCoordsSpaceLayer {
     let fills: [ChartPointsFill]
+    private let clipToPlotArea: Bool
 
-    init?(xAxis: ChartAxis, yAxis: ChartAxis, fills: [ChartPointsFill?]) {
+    init?(xAxis: ChartAxis, yAxis: ChartAxis, fills: [ChartPointsFill?], clipToPlotArea: Bool = false) {
         self.fills = fills.compactMap({ $0 })
+        self.clipToPlotArea = clipToPlotArea
 
         guard fills.count > 0 else {
             return nil
@@ -82,19 +94,24 @@ final class ChartPointsFillsLayer: ChartCoordsSpaceLayer {
     override func chartInitialized(chart: Chart) {
         super.chartInitialized(chart: chart)
 
+        let viewFrame = clipToPlotArea ? plotFrameInContentCoordinates : chart.bounds
         let view = ChartPointsFillsView(
-            frame: chart.bounds,
+            frame: viewFrame,
             chartPointsFills: fills.map { (fill) -> ChartPointsFill in
                 var fill = fill
 
                 fill.screenPoints = fill.chartPoints.map { (point) -> CGPoint in
-                    return modelLocToScreenLoc(x: point.x.scalar, y: point.y.scalar)
+                    let location = modelLocToScreenLoc(x: point.x.scalar, y: point.y.scalar)
+                    return clipToPlotArea
+                        ? CGPoint(x: location.x - viewFrame.minX, y: location.y - viewFrame.minY)
+                        : location
                 }
 
                 return fill
             }
         )
 
+        view.clipsToBounds = clipToPlotArea
         chart.addSubview(view)
     }
 }

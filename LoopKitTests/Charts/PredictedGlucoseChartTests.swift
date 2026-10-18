@@ -16,6 +16,29 @@ class PredictedGlucoseChartTests: XCTestCase {
 
     private let yAxisStepSizeMGDL: Double = 40
 
+    func testVisualReferenceRangeDoesNotChangePredictionClamping() {
+        let chart = PredictedGlucoseChart(predictedGlucoseBounds: .default)
+        let samples = [80.0, 120, 180].map {
+            GlucoseValueTestable(quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: $0), startDate: Date())
+        }
+        let prediction = [10.0, 120, 700].map {
+            GlucoseValueTestable(quantity: HKQuantity(unit: .milligramsPerDeciliter, doubleValue: $0), startDate: Date())
+        }
+        chart.setGlucoseValues(samples)
+        chart.setPredictedGlucoseValues(prediction)
+        let expected = chart.predictedGlucosePoints.map { $0.y.scalar }
+        let minimum = chart.chartMinimumValue
+        let maximum = chart.chartMaximumValue
+
+        let lower = HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 1)
+        let upper = HKQuantity(unit: .milligramsPerDeciliter, doubleValue: 1000)
+        chart.inRangeDisplayRange = lower...upper
+        chart.setPredictedGlucoseValues(prediction)
+        XCTAssertEqual(chart.predictedGlucosePoints.map { $0.y.scalar }, expected)
+        XCTAssertEqual(chart.chartMinimumValue, minimum)
+        XCTAssertEqual(chart.chartMaximumValue, maximum)
+    }
+
     func testPointAtCurrentTimeUsesLatestPriorValueAtExactCurrentDate() {
         let currentDate = Date(timeIntervalSinceReferenceDate: 1_000)
         let formatter = DateFormatter()

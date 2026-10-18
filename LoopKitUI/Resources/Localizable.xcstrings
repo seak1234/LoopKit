@@ -11160,6 +11160,17 @@
         }
       }
     },
+    "Display range: %@ to %@" : {
+      "comment" : "Accessibility description of glucose chart reference range",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Display range: %1$@ to %2$@"
+          }
+        }
+      }
+    },
     "Done" : {
       "comment" : "Text for dismiss button\nText for done button\nVideo player done button label",
       "localizations" : {

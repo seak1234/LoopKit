@@ -49,6 +49,10 @@ public class PredictedGlucoseChart: GlucoseChart, ChartProviding {
     /// retains its legacy blue target treatment.
     public var targetGlucoseFillColor: UIColor?
 
+    /// Optional visual reference range, independent of the therapy target.
+    /// Kept out of determineYAxisValues so it cannot affect prediction clamping.
+    public var inRangeDisplayRange: ClosedRange<HKQuantity>?
+
     public var preMealOverride: TemporaryScheduleOverride? {
         didSet {
             preMealOverrideDurationPoints = []
@@ -150,6 +154,24 @@ extension PredictedGlucoseChart {
 
         let (xAxisLayer, yAxisLayer, innerFrame) = (coordsSpace.xAxisLayer, coordsSpace.yAxisLayer, coordsSpace.chartInnerFrame)
 
+        let inRangeLayer: GlucoseRangeBandLayer?
+        if let range = inRangeDisplayRange {
+            let formatter = QuantityFormatter(for: glucoseUnit)
+            let lower = range.lowerBound.doubleValue(for: glucoseUnit)
+            let upper = range.upperBound.doubleValue(for: glucoseUnit)
+            inRangeLayer = GlucoseRangeBandLayer(
+                xAxis: xAxisLayer.axis, yAxis: yAxisLayer.axis,
+                range: lower...upper,
+                lowerLabel: formatter.string(from: range.lowerBound, includeUnit: false) ?? "",
+                upperLabel: formatter.string(from: range.upperBound, includeUnit: false) ?? "",
+                rangeDescription: String(format: NSLocalizedString("Display range: %@ to %@", comment: "Accessibility description of glucose chart reference range"),
+                                         formatter.string(from: range.lowerBound) ?? "",
+                                         formatter.string(from: range.upperBound) ?? "")
+            )
+        } else {
+            inRangeLayer = nil
+        }
+
         // The glucose targets
         let targetFill = UIColor { [targetGlucoseFillColor] traitCollection in
             if let targetGlucoseFillColor {
@@ -197,7 +219,8 @@ extension PredictedGlucoseChart {
         let targetsLayer = ChartPointsFillsLayer(
             xAxis: xAxisLayer.axis,
             yAxis: yAxisLayer.axis,
-            fills: fills
+            fills: fills,
+            clipToPlotArea: true
         )
 
         // Grid lines
@@ -304,6 +327,7 @@ extension PredictedGlucoseChart {
         }
 
         let layers: [ChartLayer?] = [
+            inRangeLayer,
             gridLayer,
             targetsLayer,
             currentTimeLayer,

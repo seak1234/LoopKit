@@ -116,6 +116,7 @@ final class FoodEmojiDataSource: EmojiDataSource {
 
     private static let slow: [String] = {
         var slow = [
+            "🍗", // poultry leg
             "🍕", // pizza
             "🥑", // avocado
             "🥚", // egg
@@ -124,7 +125,6 @@ final class FoodEmojiDataSource: EmojiDataSource {
             "🧀", // cheese wedge
             "🫕", // fondue
             "🍖", // meat on bone
-            "🍗", // poultry leg
             "🥓", // bacon
             "🍔", // hamburger
             "🌭", // hot dog
@@ -185,7 +185,7 @@ final class FoodEmojiDataSource: EmojiDataSource {
             EmojiSection(
                 title: LocalizedString("Slow", comment: "Section title for slow absorbing food"),
                 items: type(of: self).slow,
-                indexSymbol: "🍕"
+                indexSymbol: "🍗"
             ),
             EmojiSection(
                 title: LocalizedString("Other", comment: "Section title for no-carb food"),

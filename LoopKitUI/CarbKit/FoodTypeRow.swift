@@ -24,7 +24,9 @@ public struct FoodTypeRow: View {
     
     private let emojiShortcuts = FoodEmojiShortcut.all
     
-    @State private var selectedEmojiIndex = 1
+    private var selectedEmojiIndex: Int {
+        emojiShortcuts.firstIndex { $0.emoji == selectedDefaultAbsorptionTimeEmoji } ?? 2
+    }
     
     /// Contains emoji shortcuts, an emoji keyboard, and modifies absorption time to match emoji
     public init(foodType: Binding<String>, absorptionTime: Binding<TimeInterval>, selectedDefaultAbsorptionTimeEmoji: Binding<String>, usesCustomFoodType: Binding<Bool>, absorptionTimeWasEdited: Binding<Bool>, isFocused: Binding<Bool>, defaultAbsorptionTimes: CarbStore.DefaultAbsorptionTimes) {
@@ -70,7 +72,6 @@ public struct FoodTypeRow: View {
                                     rowTapped()
                                 default:
                                     selectedDefaultAbsorptionTimeEmoji = option.emoji
-                                    selectedEmojiIndex = index
                                     absorptionTime = orderedAbsorptionTimes[index]
                                 }
                             }
@@ -129,7 +130,7 @@ fileprivate enum FoodEmojiShortcut {
     static let all: [FoodEmojiShortcut] = [
         .fast(emoji: "🍭"),
         .medium(emoji: "🌮"),
-        .slow(emoji: "🍕"),
+        .slow(emoji: "🍗"),
         .other
     ]
 }

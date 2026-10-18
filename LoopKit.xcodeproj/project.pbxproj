@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D748E9FB2F93329100C54301 /* GlucoseRangeBandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D748E9FA2F93329100C54301 /* GlucoseRangeBandTests.swift */; };
+		D748E9F92F93329100C54301 /* GlucoseRangeBandLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D748E9F82F93329100C54301 /* GlucoseRangeBandLayer.swift */; };
 		D748E9F12F93329100C54301 /* ChartViewLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D748E9F02F93329100C54301 /* ChartViewLifecycleTests.swift */; };
 		142CB75D2A60C01E0075748A /* ListButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142CB75C2A60C01E0075748A /* ListButtonStyle.swift */; };
 		142CB7612A60C0440075748A /* FavoriteFood.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142CB7602A60C0440075748A /* FavoriteFood.swift */; };
@@ -1073,6 +1075,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D748E9FA2F93329100C54301 /* GlucoseRangeBandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseRangeBandTests.swift; sourceTree = "<group>"; };
+		D748E9F82F93329100C54301 /* GlucoseRangeBandLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlucoseRangeBandLayer.swift; sourceTree = "<group>"; };
 		D748E9F02F93329100C54301 /* ChartViewLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartViewLifecycleTests.swift; sourceTree = "<group>"; };
 		142CB75C2A60C01E0075748A /* ListButtonStyle.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ListButtonStyle.swift; sourceTree = "<group>"; };
 		142CB7602A60C0440075748A /* FavoriteFood.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FavoriteFood.swift; sourceTree = "<group>"; };
@@ -2102,6 +2106,7 @@
 				893C9F8A2447DBC100CD4185 /* CardList */,
 				E9086B3424B3A8820062F5C8 /* ChartContainerView.swift */,
 				A9D3FF112A6C19ED000C891D /* ChartPointsContextFillLayer.swift */,
+				D748E9F82F93329100C54301 /* GlucoseRangeBandLayer.swift */,
 				A9D3FF132A6C1A01000C891D /* ChartPointsScatterDownTrianglesLayer.swift */,
 				A9D3FF152A6C1A16000C891D /* ChartPointsTouchHighlightLayerViewCache.swift */,
 				E9086B3024B3A7270062F5C8 /* ChartTableViewCell.swift */,
@@ -2889,6 +2894,7 @@
 				A9D3FF1A2A6C2CA9000C891D /* ChartAxisValuesStaticGeneratorTests.swift */,
 				A9D3FF182A6C2C85000C891D /* PredictedGlucoseChartTests.swift */,
 				D748E9F02F93329100C54301 /* ChartViewLifecycleTests.swift */,
+				D748E9FA2F93329100C54301 /* GlucoseRangeBandTests.swift */,
 			);
 			path = Charts;
 			sourceTree = "<group>";
@@ -3889,6 +3895,7 @@
 				892A5DB42231E191008961AB /* LevelMaskView.swift in Sources */,
 				892A5DA02231E130008961AB /* CompletionNotifying.swift in Sources */,
 				A9D3FF122A6C19ED000C891D /* ChartPointsContextFillLayer.swift in Sources */,
+				D748E9F92F93329100C54301 /* GlucoseRangeBandLayer.swift in Sources */,
 				E93C86A424C8F79C0073089B /* ChartLineModel+LoopKitUI.swift in Sources */,
 				B43D69D62A26642300DF0925 /* DemoPlaceHolderView.swift in Sources */,
 				E949E38F24B3711E00024DA0 /* InsulinModelInformationView.swift in Sources */,
@@ -4298,6 +4305,7 @@
 				4322B76C202F9ECD0002837D /* CarbMathTests.swift in Sources */,
 				A9D3FF192A6C2C85000C891D /* PredictedGlucoseChartTests.swift in Sources */,
 				D748E9F12F93329100C54301 /* ChartViewLifecycleTests.swift in Sources */,
+				D748E9FB2F93329100C54301 /* GlucoseRangeBandTests.swift in Sources */,
 				1D70C40D26F01D9F00C62570 /* VersionCheckServiceTests.swift in Sources */,
 				434113B520F2BDB500D05747 /* CachedInsulinDeliveryObjectTests.swift in Sources */,
 				43D8FE1F1C72906E0073BE78 /* QuantityScheduleTests.swift in Sources */,
