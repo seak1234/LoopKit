@@ -20,6 +20,27 @@ public enum CGMReadingResult {
     case error(Error)
 }
 
+/// Optional read-only lifecycle details for a configured sensor. Dates describe
+/// the device's expected lifetime; they do not guarantee continued operation.
+public struct CGMSensorLifecycle {
+    public let startDate: Date?
+    public let nominalExpirationDate: Date?
+    public let sessionEndDate: Date?
+    public let warmupEndDate: Date?
+
+    public init(startDate: Date?, nominalExpirationDate: Date?, sessionEndDate: Date?, warmupEndDate: Date?) {
+        self.startDate = startDate
+        self.nominalExpirationDate = nominalExpirationDate
+        self.sessionEndDate = sessionEndDate
+        self.warmupEndDate = warmupEndDate
+    }
+}
+
+/// Optional capability, so existing CGMManager implementations remain compatible.
+public protocol CGMSensorLifecycleProviding {
+    var sensorLifecycle: CGMSensorLifecycle? { get }
+}
+
 public struct CGMManagerStatus: Equatable {
     // Return false if no sensor active, or in a state where no future data is expected without user intervention
     public var hasValidSensorSession: Bool
